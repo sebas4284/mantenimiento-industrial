@@ -2,8 +2,10 @@
 
 namespace App\Livewire\WorkOrders;
 
+use App\Enums\WorkOrderExecutionType;
 use App\Enums\WorkOrderStatus;
 use App\Models\Attachment;
+use App\Models\Provider;
 use App\Models\SparePart;
 use App\Models\SparePartUsage;
 use App\Models\User;
@@ -25,6 +27,10 @@ class Show extends Component
 
     public ?int $assigned_to = null;
 
+    public ?int $provider_id = null;
+
+    public ?int $support_collaborator_id = null;
+
     /** @var array<int, array{passed: bool|null, notes: string|null}> */
     public array $checklist = [];
 
@@ -38,9 +44,11 @@ class Show extends Component
     {
         $this->authorize('view', $workOrder);
 
-        $this->workOrder = $workOrder->load(['asset.area.plant', 'maintenancePlan.checklistTemplate.items', 'checklistResults', 'attachments.uploadedBy', 'reportedBy', 'assignedTo', 'provider', 'sparePartUsages.sparePart', 'sparePartUsages.usedBy']);
+        $this->workOrder = $workOrder->load(['asset.area.plant', 'maintenancePlan.checklistTemplate.items', 'checklistResults', 'attachments.uploadedBy', 'reportedBy', 'assignedTo', 'provider', 'supportCollaborator', 'sparePartUsages.sparePart', 'sparePartUsages.usedBy']);
         $this->resolution_notes = (string) $workOrder->resolution_notes;
         $this->assigned_to = $workOrder->assigned_to;
+        $this->provider_id = $workOrder->provider_id;
+        $this->support_collaborator_id = $workOrder->support_collaborator_id;
 
         if ($template = $this->workOrder->maintenancePlan?->checklistTemplate) {
             $existing = $this->workOrder->checklistResults->keyBy('checklist_item_id');
@@ -114,9 +122,23 @@ class Show extends Component
     {
         $this->authorize('update', $this->workOrder);
 
-        $this->validate(['assigned_to' => ['required', 'exists:users,id']]);
+        if ($this->workOrder->execution_type === WorkOrderExecutionType::Externo) {
+            $this->validate([
+                'provider_id' => ['required', 'exists:providers,id'],
+                'support_collaborator_id' => ['nullable', 'exists:users,id'],
+            ]);
 
-        $this->workOrder->update(['assigned_to' => $this->assigned_to]);
+            $this->workOrder->update([
+                'provider_id' => $this->provider_id,
+                'support_collaborator_id' => $this->support_collaborator_id,
+            ]);
+        } else {
+            $this->validate(['assigned_to' => ['nullable', 'exists:users,id']]);
+
+            $this->workOrder->update(['assigned_to' => $this->assigned_to]);
+        }
+
+        $this->workOrder->refresh();
     }
 
     public function addSparePartUsage(): void
@@ -163,7 +185,19 @@ class Show extends Component
         $plantId = $this->workOrder->asset->area->plant_id;
 
         return view('livewire.work-orders.show', [
-            'technicians' => User::where('plant_id', $plantId)->whereIn('role', ['tecnico', 'supervisor'])->orderBy('name')->get(),
+            'technicians' => User::where('plant_id', $plantId)
+                ->whereIn('role', ['tecnico', 'supervisor'])
+                ->withCount([
+                    'assignedWorkOrders as active_assigned_count' => fn ($q) => $q
+                        ->where('status', WorkOrderStatus::EnProgreso)
+                        ->where('id', '!=', $this->workOrder->id),
+                    'supportedWorkOrders as active_support_count' => fn ($q) => $q
+                        ->where('status', WorkOrderStatus::EnProgreso)
+                        ->where('id', '!=', $this->workOrder->id),
+                ])
+                ->orderBy('name')
+                ->get(),
+            'providers' => Provider::orderBy('name')->get(),
             'spareParts' => SparePart::withoutGlobalScopes()->where('plant_id', $plantId)->orderBy('name')->get(),
         ]);
     }

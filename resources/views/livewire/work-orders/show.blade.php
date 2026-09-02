@@ -26,6 +26,12 @@
             </p>
         @endif
 
+        @if ($workOrder->supportCollaborator)
+            <p class="mt-1 text-sm text-gray-600 dark:text-gray-300">
+                Colaborador de apoyo: <span class="font-medium text-gray-900 dark:text-gray-100">{{ $workOrder->supportCollaborator->name }}</span>
+            </p>
+        @endif
+
         <dl class="mt-6 grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
             <div>
                 <dt class="text-gray-400">Reportada por</dt>
@@ -63,15 +69,47 @@
         @can('update', $workOrder)
             <div class="mt-6 border-t border-gray-100 dark:border-gray-700 pt-4">
                 <form wire:submit="assign" class="flex flex-wrap items-end gap-3">
-                    <div class="flex-1 min-w-[200px]">
-                        <x-input-label for="assigned_to" value="Asignar técnico" />
-                        <select wire:model="assigned_to" id="assigned_to" class="mt-1 block w-full rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 shadow-sm text-sm">
-                            <option value="">Sin asignar</option>
-                            @foreach ($technicians as $tech)
-                                <option value="{{ $tech->id }}">{{ $tech->name }}</option>
-                            @endforeach
-                        </select>
-                    </div>
+                    @if ($workOrder->execution_type === \App\Enums\WorkOrderExecutionType::Externo)
+                        <div class="flex-1 min-w-[200px]">
+                            <x-input-label for="provider_id" value="Proveedor" />
+                            <select wire:model="provider_id" id="provider_id" class="mt-1 block w-full rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 shadow-sm text-sm">
+                                <option value="">Sin asignar</option>
+                                @foreach ($providers as $prov)
+                                    <option value="{{ $prov->id }}">{{ $prov->name }}</option>
+                                @endforeach
+                            </select>
+                            <x-input-error :messages="$errors->get('provider_id')" class="mt-1" />
+                        </div>
+                        <div class="flex-1 min-w-[200px]">
+                            <x-input-label for="support_collaborator_id" value="Colaborador asignado de apoyo" />
+                            <select wire:model.live="support_collaborator_id" id="support_collaborator_id" class="mt-1 block w-full rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 shadow-sm text-sm">
+                                <option value="">Sin asignar</option>
+                                @foreach ($technicians as $tech)
+                                    <option value="{{ $tech->id }}">{{ $tech->name }}</option>
+                                @endforeach
+                            </select>
+                            <x-input-error :messages="$errors->get('support_collaborator_id')" class="mt-1" />
+                            @php $selectedSupport = $technicians->firstWhere('id', (int) $support_collaborator_id); @endphp
+                            @if ($selectedSupport && ($selectedSupport->active_assigned_count + $selectedSupport->active_support_count) > 0)
+                                <p class="mt-1 text-xs text-amber-600 dark:text-amber-400">⚠ {{ $selectedSupport->name }} ya tiene una orden en curso.</p>
+                            @endif
+                        </div>
+                    @else
+                        <div class="flex-1 min-w-[200px]">
+                            <x-input-label for="assigned_to" value="Colaborador asignado" />
+                            <select wire:model.live="assigned_to" id="assigned_to" class="mt-1 block w-full rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 shadow-sm text-sm">
+                                <option value="">Sin asignar</option>
+                                @foreach ($technicians as $tech)
+                                    <option value="{{ $tech->id }}">{{ $tech->name }}</option>
+                                @endforeach
+                            </select>
+                            <x-input-error :messages="$errors->get('assigned_to')" class="mt-1" />
+                            @php $selectedTech = $technicians->firstWhere('id', (int) $assigned_to); @endphp
+                            @if ($selectedTech && ($selectedTech->active_assigned_count + $selectedTech->active_support_count) > 0)
+                                <p class="mt-1 text-xs text-amber-600 dark:text-amber-400">⚠ {{ $selectedTech->name }} ya tiene una orden en curso.</p>
+                            @endif
+                        </div>
+                    @endif
                     <x-secondary-button type="submit">Asignar</x-secondary-button>
                 </form>
             </div>
