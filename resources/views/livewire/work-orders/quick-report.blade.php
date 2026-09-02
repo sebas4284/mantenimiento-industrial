@@ -15,6 +15,16 @@
         @else
             <form wire:submit="report" class="mt-6 space-y-4">
                 <div>
+                    <x-input-label for="type" value="Tipo" />
+                    <select wire:model="type" id="type" class="mt-1 block w-full rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 shadow-sm text-sm">
+                        @foreach ($types as $t)
+                            <option value="{{ $t->value }}">{{ $t->label() }}</option>
+                        @endforeach
+                    </select>
+                    <x-input-error :messages="$errors->get('type')" class="mt-1" />
+                </div>
+
+                <div>
                     <x-input-label for="priority" value="Prioridad" />
                     <select wire:model="priority" id="priority" class="mt-1 block w-full rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 shadow-sm text-sm">
                         @foreach ($priorities as $p)
@@ -24,6 +34,29 @@
                 </div>
 
                 <div>
+                    <x-input-label for="execution_type" value="Ejecución" />
+                    <select wire:model.live="execution_type" id="execution_type" class="mt-1 block w-full rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 shadow-sm text-sm">
+                        @foreach ($executionTypes as $e)
+                            <option value="{{ $e->value }}">{{ $e->label() }}</option>
+                        @endforeach
+                    </select>
+                    <x-input-error :messages="$errors->get('execution_type')" class="mt-1" />
+                </div>
+
+                @if ($execution_type === 'externo')
+                    <div>
+                        <x-input-label for="provider_id" value="Proveedor" />
+                        <select wire:model="provider_id" id="provider_id" class="mt-1 block w-full rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 shadow-sm text-sm">
+                            <option value="">Selecciona un proveedor</option>
+                            @foreach ($providers as $provider)
+                                <option value="{{ $provider->id }}">{{ $provider->name }}</option>
+                            @endforeach
+                        </select>
+                        <x-input-error :messages="$errors->get('provider_id')" class="mt-1" />
+                    </div>
+                @endif
+
+                <div>
                     <x-input-label for="failure_description" value="¿Qué está pasando?" />
                     <textarea wire:model="failure_description" id="failure_description" rows="4" autofocus
                         class="mt-1 block w-full rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 shadow-sm text-sm"
@@ -31,7 +64,7 @@
                     <x-input-error :messages="$errors->get('failure_description')" class="mt-1" />
                 </div>
 
-                <x-primary-button class="w-full justify-center">Reportar falla</x-primary-button>
+                <x-primary-button class="w-full justify-center">Crear reporte</x-primary-button>
             </form>
         @endif
     </div>
