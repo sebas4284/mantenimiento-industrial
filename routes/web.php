@@ -9,6 +9,8 @@ use App\Livewire\MaintenancePlans\Index as MaintenancePlansIndex;
 use App\Livewire\Providers\Index as ProvidersIndex;
 use App\Livewire\Providers\Show as ProvidersShow;
 use App\Livewire\SpareParts\Index as SparePartsIndex;
+use App\Livewire\Team\Index as TeamIndex;
+use App\Livewire\Team\Show as TeamShow;
 use App\Livewire\WorkOrders\Index as WorkOrdersIndex;
 use App\Livewire\WorkOrders\QuickReport;
 use App\Livewire\WorkOrders\Show as WorkOrderShow;
@@ -37,6 +39,9 @@ Route::middleware(['auth'])->group(function () {
     Route::get('inventario', SparePartsIndex::class)->name('spare-parts.index');
     Route::get('proveedores', ProvidersIndex::class)->name('providers.index');
     Route::get('proveedores/{provider}', ProvidersShow::class)->name('providers.show');
+
+    Route::get('equipo', TeamIndex::class)->name('team.index');
+    Route::get('equipo/{member}', TeamShow::class)->name('team.show');
 
     Route::get('usuarios', UsersIndex::class)->name('admin.users.index');
     Route::get('plantas', PlantsIndex::class)->name('admin.plants.index');

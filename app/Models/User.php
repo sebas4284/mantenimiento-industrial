@@ -48,4 +48,9 @@ class User extends Authenticatable
     {
         return $this->hasMany(WorkOrder::class, 'assigned_to');
     }
+
+    public function supportedWorkOrders(): HasMany
+    {
+        return $this->hasMany(WorkOrder::class, 'support_collaborator_id');
+    }
 }

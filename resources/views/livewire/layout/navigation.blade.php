@@ -51,6 +51,11 @@ new class extends Component
                     <x-nav-link :href="route('providers.index')" :active="request()->routeIs('providers.*')" wire:navigate>
                         Proveedores
                     </x-nav-link>
+                    @if (in_array(auth()->user()->role, [\App\Enums\UserRole::Admin, \App\Enums\UserRole::Supervisor], true))
+                        <x-nav-link :href="route('team.index')" :active="request()->routeIs('team.*')" wire:navigate>
+                            Equipo de trabajo
+                        </x-nav-link>
+                    @endif
                     @if (auth()->user()->role === \App\Enums\UserRole::Admin)
                         <x-nav-link :href="route('admin.users.index')" :active="request()->routeIs('admin.users.index')" wire:navigate>
                             Usuarios
@@ -128,6 +133,11 @@ new class extends Component
             <x-responsive-nav-link :href="route('providers.index')" :active="request()->routeIs('providers.*')" wire:navigate>
                 Proveedores
             </x-responsive-nav-link>
+            @if (in_array(auth()->user()->role, [\App\Enums\UserRole::Admin, \App\Enums\UserRole::Supervisor], true))
+                <x-responsive-nav-link :href="route('team.index')" :active="request()->routeIs('team.*')" wire:navigate>
+                    Equipo de trabajo
+                </x-responsive-nav-link>
+            @endif
             @if (auth()->user()->role === \App\Enums\UserRole::Admin)
                 <x-responsive-nav-link :href="route('admin.users.index')" :active="request()->routeIs('admin.users.index')" wire:navigate>
                     Usuarios

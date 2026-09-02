@@ -24,6 +24,7 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
     'type',
     'execution_type',
     'provider_id',
+    'support_collaborator_id',
     'priority',
     'status',
     'failure_description',
@@ -73,6 +74,11 @@ class WorkOrder extends Model
     public function assignedTo(): BelongsTo
     {
         return $this->belongsTo(User::class, 'assigned_to');
+    }
+
+    public function supportCollaborator(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'support_collaborator_id');
     }
 
     public function checklistResults(): HasMany
