@@ -16,7 +16,7 @@ use App\Livewire\WorkOrders\QuickReport;
 use App\Livewire\WorkOrders\Show as WorkOrderShow;
 use Illuminate\Support\Facades\Route;
 
-Route::view('/', 'welcome');
+Route::redirect('/', '/login');
 
 Route::view('dashboard', 'dashboard')
     ->middleware(['auth', 'verified'])
