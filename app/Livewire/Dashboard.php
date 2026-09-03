@@ -2,6 +2,7 @@
 
 namespace App\Livewire;
 
+use App\Enums\WorkOrderPriority;
 use App\Enums\WorkOrderStatus;
 use App\Enums\WorkOrderType;
 use App\Models\Asset;
@@ -32,25 +33,17 @@ class Dashboard extends Component
     {
         $start = Carbon::now()->subDays($this->period)->startOfDay();
         $end = Carbon::now()->endOfDay();
+        $previousEnd = $start->copy()->subSecond();
+        $previousStart = $previousEnd->copy()->subDays($this->period)->startOfDay();
 
-        $totalAssets = $this->scopedAssets()->count();
-        $failuresCount = $this->scopedWorkOrders()
-            ->where('type', WorkOrderType::Correctivo)
-            ->whereBetween('opened_at', [$start, $end])
-            ->count();
+        $current = $this->periodMetrics($start, $end);
+        $previous = $this->periodMetrics($previousStart, $previousEnd);
 
-        $mtbfHours = $failuresCount > 0
-            ? round(($this->period * 24 * max($totalAssets, 1)) / $failuresCount, 1)
-            : null;
-
-        $mttrHours = $this->averageRepairHours($start, $end);
-
-        $availability = $mtbfHours && $mttrHours
-            ? round($mtbfHours / ($mtbfHours + $mttrHours) * 100, 1)
-            : null;
-
-        $preventiveCompliance = $this->preventiveCompliance($start, $end);
         $backlog = $this->backlogByPriority();
+        $backlogTotal = $backlog->sum();
+        $backlogInProgressOrWaiting = $this->scopedWorkOrders()
+            ->whereIn('status', [WorkOrderStatus::EnProgreso, WorkOrderStatus::EnEspera])
+            ->count();
 
         $this->paretoData = $this->paretoOfFailures($start, $end);
         $this->trendData = $this->monthlyTrend();
@@ -58,14 +51,19 @@ class Dashboard extends Component
         return view('livewire.dashboard', [
             'isMultiPlant' => Auth::user()->role->seesAllPlants(),
             'plants' => Auth::user()->role->seesAllPlants() ? Plant::orderBy('name')->get() : collect(),
-            'totalAssets' => $totalAssets,
-            'failuresCount' => $failuresCount,
-            'mtbfHours' => $mtbfHours,
-            'mttrHours' => $mttrHours,
-            'availability' => $availability,
-            'preventiveCompliance' => $preventiveCompliance,
-            'backlogTotal' => $backlog->sum(),
+            'mtbfHours' => $current['mtbf'],
+            'mtbfDelta' => $this->percentDelta($current['mtbf'], $previous['mtbf']),
+            'mttrHours' => $current['mttr'],
+            'mttrDelta' => $this->percentDelta($current['mttr'], $previous['mttr']),
+            'availability' => $current['availability'],
+            'availabilityDelta' => $this->percentDelta($current['availability'], $previous['availability']),
+            'preventiveCompliance' => $current['preventiveCompliance'],
+            'preventiveComplianceDelta' => $this->percentDelta($current['preventiveCompliance'], $previous['preventiveCompliance']),
+            'backlogTotal' => $backlogTotal,
             'backlogByPriority' => $backlog,
+            'backlogRingPct' => $backlogTotal > 0 ? (int) round($backlogInProgressOrWaiting / $backlogTotal * 100) : 0,
+            'topAssets' => $this->topAssetsWithFailures($start, $end),
+            'attentionWorkOrder' => $this->attentionWorkOrder(),
         ]);
     }
 
@@ -83,6 +81,46 @@ class Dashboard extends Component
             $this->plantFilter,
             fn (Builder $q) => $q->whereHas('area', fn (Builder $q2) => $q2->where('plant_id', $this->plantFilter))
         );
+    }
+
+    /**
+     * @return array{mtbf: ?float, mttr: ?float, availability: ?float, preventiveCompliance: ?float}
+     */
+    private function periodMetrics(Carbon $start, Carbon $end): array
+    {
+        $totalAssets = $this->scopedAssets()->count();
+        $failuresCount = $this->scopedWorkOrders()
+            ->where('type', WorkOrderType::Correctivo)
+            ->whereBetween('opened_at', [$start, $end])
+            ->count();
+
+        $periodDays = max($start->diffInDays($end), 1);
+
+        $mtbf = $failuresCount > 0
+            ? round(($periodDays * 24 * max($totalAssets, 1)) / $failuresCount, 1)
+            : null;
+
+        $mttr = $this->averageRepairHours($start, $end);
+
+        $availability = $mtbf && $mttr
+            ? round($mtbf / ($mtbf + $mttr) * 100, 1)
+            : null;
+
+        return [
+            'mtbf' => $mtbf,
+            'mttr' => $mttr,
+            'availability' => $availability,
+            'preventiveCompliance' => $this->preventiveCompliance($start, $end),
+        ];
+    }
+
+    private function percentDelta(?float $current, ?float $previous): ?float
+    {
+        if ($current === null || $previous === null || $previous == 0.0) {
+            return null;
+        }
+
+        return round(($current - $previous) / $previous * 100, 1);
     }
 
     private function averageRepairHours(Carbon $start, Carbon $end): ?float
@@ -144,6 +182,60 @@ class Dashboard extends Component
             'labels' => $rows->map(fn ($row) => $row->asset->code)->all(),
             'values' => $rows->pluck('total')->all(),
         ];
+    }
+
+    /**
+     * @return Collection<int, array{name: string, code: string, technician: string, fails: int}>
+     */
+    private function topAssetsWithFailures(Carbon $start, Carbon $end): Collection
+    {
+        $rows = $this->scopedWorkOrders()
+            ->where('type', WorkOrderType::Correctivo)
+            ->whereBetween('opened_at', [$start, $end])
+            ->select('asset_id', DB::raw('count(*) as total'))
+            ->groupBy('asset_id')
+            ->orderByDesc('total')
+            ->limit(3)
+            ->with(['asset.workOrders' => fn ($q) => $q
+                ->where('type', WorkOrderType::Correctivo)
+                ->whereBetween('opened_at', [$start, $end])
+                ->whereNotNull('assigned_to')
+                ->latest('opened_at')
+                ->with('assignedTo'),
+            ])
+            ->get();
+
+        return $rows->map(fn ($row) => [
+            'name' => $row->asset->name,
+            'code' => $row->asset->code,
+            'technician' => $row->asset->workOrders->first()?->assignedTo?->name ?? '—',
+            'fails' => $row->total,
+        ]);
+    }
+
+    /**
+     * The oldest still-open order at the highest priority tier that currently has any —
+     * checked as separate queries (Urgente, then Alta, ...) rather than a single
+     * `ORDER BY FIELD(...)` so this stays portable to the SQLite test database.
+     * WorkOrderPriority::cases() is declared Baja, Media, Alta, Urgente, so walking
+     * the reversed array checks highest-priority first.
+     */
+    private function attentionWorkOrder(): ?WorkOrder
+    {
+        foreach (array_reverse(WorkOrderPriority::cases()) as $priority) {
+            $workOrder = $this->scopedWorkOrders()
+                ->whereIn('status', [WorkOrderStatus::Abierta, WorkOrderStatus::EnProgreso, WorkOrderStatus::EnEspera])
+                ->where('priority', $priority)
+                ->oldest('opened_at')
+                ->with('asset')
+                ->first();
+
+            if ($workOrder) {
+                return $workOrder;
+            }
+        }
+
+        return null;
     }
 
     /**
