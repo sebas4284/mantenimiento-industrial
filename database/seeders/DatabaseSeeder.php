@@ -37,6 +37,8 @@ class DatabaseSeeder extends Seeder
             'email' => 'corporativo@mantenimiento.test',
         ]);
 
+        $this->call(PreOperationalItemSeeder::class);
+
         $checklistTemplates = ChecklistTemplate::factory()
             ->count(3)
             ->has(ChecklistItem::factory()->count(5), 'items')

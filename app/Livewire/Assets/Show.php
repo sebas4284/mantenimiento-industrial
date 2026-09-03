@@ -4,6 +4,7 @@ namespace App\Livewire\Assets;
 
 use App\Enums\WorkOrderType;
 use App\Exports\AssetMaintenanceExport;
+use App\Exports\PreOperationalChecklistExport;
 use App\Models\Asset;
 use Illuminate\Support\Carbon;
 use Livewire\Attributes\Layout;
@@ -20,6 +21,10 @@ class Show extends Component
     public string $exportFrom = '';
 
     public string $exportTo = '';
+
+    public string $preopExportFrom = '';
+
+    public string $preopExportTo = '';
 
     public function mount(Asset $asset): void
     {
@@ -54,6 +59,22 @@ class Show extends Component
         );
     }
 
+    public function exportPreOperationalChecklists()
+    {
+        $validated = $this->validate([
+            'preopExportFrom' => ['nullable', 'date'],
+            'preopExportTo' => ['nullable', 'date', 'after_or_equal:preopExportFrom'],
+        ]);
+
+        $from = $validated['preopExportFrom'] ? Carbon::parse($validated['preopExportFrom'])->startOfDay() : null;
+        $to = $validated['preopExportTo'] ? Carbon::parse($validated['preopExportTo'])->endOfDay() : null;
+
+        return Excel::download(
+            new PreOperationalChecklistExport($this->asset, $from, $to),
+            "preoperacionales-{$this->asset->code}.xlsx",
+        );
+    }
+
     public function render()
     {
         $workOrders = $this->asset->workOrders()
@@ -65,6 +86,11 @@ class Show extends Component
             'workOrders' => $workOrders,
             'correctivos' => $workOrders->where('type', WorkOrderType::Correctivo),
             'preventivos' => $workOrders->where('type', WorkOrderType::Preventivo),
+            'preOperationalChecklists' => $this->asset->preOperationalChecklists()
+                ->with('performedBy')
+                ->orderByDesc('inspected_at')
+                ->limit(10)
+                ->get(),
         ]);
     }
 }

@@ -6,6 +6,9 @@ use App\Livewire\Assets\Index as AssetsIndex;
 use App\Livewire\Assets\Show as AssetsShow;
 use App\Livewire\ChecklistTemplates\Index as ChecklistTemplatesIndex;
 use App\Livewire\MaintenancePlans\Index as MaintenancePlansIndex;
+use App\Livewire\PreOperationalChecklists\Create as PreOperationalChecklistsCreate;
+use App\Livewire\PreOperationalChecklists\Index as PreOperationalChecklistsIndex;
+use App\Livewire\PreOperationalChecklists\Show as PreOperationalChecklistsShow;
 use App\Livewire\Providers\Index as ProvidersIndex;
 use App\Livewire\Providers\Show as ProvidersShow;
 use App\Livewire\SpareParts\Index as SparePartsIndex;
@@ -36,6 +39,10 @@ Route::middleware(['auth'])->group(function () {
 
     Route::get('planes', MaintenancePlansIndex::class)->name('maintenance-plans.index');
     Route::get('checklists', ChecklistTemplatesIndex::class)->name('checklist-templates.index');
+
+    Route::get('preoperacionales', PreOperationalChecklistsIndex::class)->name('pre-operational-checklists.index');
+    Route::get('preoperacionales/nueva', PreOperationalChecklistsCreate::class)->name('pre-operational-checklists.create');
+    Route::get('preoperacionales/{preOperationalChecklist}', PreOperationalChecklistsShow::class)->name('pre-operational-checklists.show');
     Route::get('inventario', SparePartsIndex::class)->name('spare-parts.index');
     Route::get('proveedores', ProvidersIndex::class)->name('providers.index');
     Route::get('proveedores/{provider}', ProvidersShow::class)->name('providers.show');

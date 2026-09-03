@@ -9,15 +9,25 @@ use App\Enums\WorkOrderType;
 use App\Models\Asset;
 use App\Models\Provider;
 use App\Models\WorkOrder;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Enum;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
+use Livewire\WithPagination;
 
 #[Layout('layouts.app')]
 class Index extends Component
 {
+    use WithPagination;
+
     public string $typeFilter = '';
+
+    public string $search = '';
+
+    public string $dateFrom = '';
+
+    public string $dateTo = '';
 
     public bool $showModal = false;
 
@@ -72,6 +82,13 @@ class Index extends Component
         $this->showModal = false;
     }
 
+    public function updated(string $property): void
+    {
+        if (in_array($property, ['search', 'dateFrom', 'dateTo', 'typeFilter'], true)) {
+            $this->resetPage();
+        }
+    }
+
     public function take(WorkOrder $workOrder): void
     {
         $this->authorize('update', $workOrder);
@@ -102,18 +119,51 @@ class Index extends Component
         $workOrder->save();
     }
 
+    protected function applySearch(Builder $query): Builder
+    {
+        return $query->when($this->search, fn ($q) => $q->where(
+            fn ($q2) => $q2->where('order_number', 'like', "%{$this->search}%")
+                ->orWhere('failure_description', 'like', "%{$this->search}%")
+                ->orWhereHas('asset', fn ($q3) => $q3
+                    ->where('name', 'like', "%{$this->search}%")
+                    ->orWhere('code', 'like', "%{$this->search}%"))
+        ));
+    }
+
     public function render()
     {
-        $workOrders = WorkOrder::query()
-            ->with(['asset.area.plant', 'assignedTo', 'reportedBy'])
-            ->when($this->typeFilter, fn ($q) => $q->where('type', $this->typeFilter))
-            ->orderByDesc('opened_at')
+        $openStatuses = array_map(
+            fn (WorkOrderStatus $s) => $s->value,
+            array_filter(WorkOrderStatus::cases(), fn (WorkOrderStatus $s) => $s->isOpen()),
+        );
+
+        $board = $this->applySearch(
+            WorkOrder::query()
+                ->with(['asset.area.plant', 'assignedTo', 'reportedBy'])
+                ->whereIn('status', $openStatuses)
+                ->when($this->typeFilter, fn ($q) => $q->where('type', $this->typeFilter))
+        )
+            ->orderByRaw("CASE priority WHEN 'urgente' THEN 4 WHEN 'alta' THEN 3 WHEN 'media' THEN 2 ELSE 1 END DESC")
+            ->orderByRaw("CASE type WHEN 'correctivo' THEN 1 ELSE 0 END DESC")
+            ->orderBy('opened_at', 'asc')
             ->get()
             ->groupBy(fn (WorkOrder $wo) => $wo->status->value);
 
+        $historial = $this->applySearch(
+            WorkOrder::query()
+                ->with(['asset.area.plant'])
+                ->whereIn('status', ['completada', 'cancelada'])
+                ->when($this->typeFilter, fn ($q) => $q->where('type', $this->typeFilter))
+                ->when($this->dateFrom, fn ($q) => $q->whereDate('opened_at', '>=', $this->dateFrom))
+                ->when($this->dateTo, fn ($q) => $q->whereDate('opened_at', '<=', $this->dateTo))
+        )
+            ->orderByDesc('opened_at')
+            ->paginate(15);
+
         return view('livewire.work-orders.index', [
-            'columns' => WorkOrderStatus::cases(),
-            'workOrdersByStatus' => $workOrders,
+            'columns' => array_filter(WorkOrderStatus::cases(), fn (WorkOrderStatus $s) => $s->isOpen()),
+            'workOrdersByStatus' => $board,
+            'historial' => $historial,
             'assets' => Asset::with('area')->orderBy('name')->get(),
             'types' => WorkOrderType::cases(),
             'priorities' => WorkOrderPriority::cases(),
