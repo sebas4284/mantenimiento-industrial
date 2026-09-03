@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Providers;
 
+use App\Enums\WorkOrderStatus;
 use App\Models\Provider;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
@@ -103,6 +104,11 @@ class Index extends Component
     public function render()
     {
         $providers = Provider::query()
+            ->withCount(['workOrders as active_work_orders_count' => fn ($q) => $q->whereIn('status', [
+                WorkOrderStatus::Abierta,
+                WorkOrderStatus::EnProgreso,
+                WorkOrderStatus::EnEspera,
+            ])])
             ->when($this->search, fn ($q) => $q->where(fn ($q) => $q
                 ->where('name', 'like', "%{$this->search}%")
                 ->orWhere('specialty', 'like', "%{$this->search}%")))
