@@ -1,0 +1,88 @@
+<?php
+
+namespace Tests\Feature;
+
+use App\Enums\UserRole;
+use App\Models\Area;
+use App\Models\Asset;
+use App\Models\Plant;
+use App\Models\User;
+use DOMDocument;
+use DOMXPath;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
+
+/**
+ * Throwaway structural check for Finding 1: wire:-bearing controls must render as
+ * DESCENDANTS of the Livewire root element (the one carrying wire:id), otherwise
+ * Livewire's closestComponent() walk finds no component and the binding is dead.
+ *
+ * symfony/dom-crawler is not installed in this project, so this uses PHP's built-in
+ * DOMDocument/DOMXPath — same descendant assertion, no new dependency.
+ */
+class HeaderSlotStructureTest extends TestCase
+{
+    use RefreshDatabase;
+
+    private function xpath(string $html): DOMXPath
+    {
+        $doc = new DOMDocument;
+        libxml_use_internal_errors(true);
+        $doc->loadHTML($html);
+        libxml_clear_errors();
+
+        return new DOMXPath($doc);
+    }
+
+    /**
+     * XPath uses name()= comparisons because attributes like `wire:id` would otherwise
+     * be read as a `wire` namespace prefix.
+     */
+    private function assertNestedInComponent(string $html, string $attribute, ?string $value, string $label): void
+    {
+        $predicate = $value === null
+            ? sprintf('@*[name()="%s"]', $attribute)
+            : sprintf('@*[name()="%s"]="%s"', $attribute, $value);
+
+        $anywhere = $this->xpath($html)->query(sprintf('//*[%s]', $predicate));
+        $nested = $this->xpath($html)->query(sprintf('//*[@*[name()="wire:id"]]//*[%s]', $predicate));
+
+        $this->assertGreaterThan(0, $anywhere->length, "{$label}: element not present in the page at all.");
+        $this->assertGreaterThan(
+            0,
+            $nested->length,
+            "{$label}: element is present ({$anywhere->length} found) but NOT a descendant of any [wire:id] element — the Livewire binding is dead."
+        );
+    }
+
+    private function admin(): User
+    {
+        return User::factory()->role(UserRole::Admin)->create();
+    }
+
+    public function test_dashboard_period_select_is_inside_the_livewire_component_root(): void
+    {
+        $response = $this->actingAs($this->admin())->get('/dashboard');
+        $response->assertOk();
+
+        $this->assertNestedInComponent($response->getContent(), 'wire:model.live', 'period', 'Dashboard period select');
+    }
+
+    public function test_work_orders_create_button_is_inside_the_livewire_component_root(): void
+    {
+        $response = $this->actingAs($this->admin())->get('/ordenes');
+        $response->assertOk();
+
+        $this->assertNestedInComponent($response->getContent(), 'wire:click', 'create', 'Ordenes "Crear reporte" button');
+    }
+
+    public function test_asset_show_history_button_is_inside_the_livewire_component_root(): void
+    {
+        $asset = Asset::factory()->for(Area::factory()->for(Plant::factory()))->create();
+
+        $response = $this->actingAs($this->admin())->get("/activos/{$asset->id}");
+        $response->assertOk();
+
+        $this->assertNestedInComponent($response->getContent(), 'wire:click', 'openHistory', 'Asset detail "Ver historial" button');
+    }
+}

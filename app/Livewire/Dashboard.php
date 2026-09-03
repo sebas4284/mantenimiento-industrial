@@ -130,7 +130,7 @@ class Dashboard extends Component
             ->where('status', WorkOrderStatus::Completada)
             ->whereBetween('completed_at', [$start, $end])
             ->get()
-            ->avg(fn (WorkOrder $wo) => $wo->started_at->diffInMinutes($wo->completed_at));
+            ->avg(fn (WorkOrder $wo) => $wo->repair_minutes);
 
         return $minutes ? round($minutes / 60, 1) : null;
     }

@@ -17,37 +17,39 @@
     </div>
 
     <div class="card elev-sm p-4">
-        <table class="table">
-            <thead>
-                <tr>
-                    <th>Proveedor</th>
-                    <th>Especialidad</th>
-                    <th>Contacto</th>
-                    <th>Órdenes activas</th>
-                    <th></th>
-                </tr>
-            </thead>
-            <tbody>
-                @forelse ($providers as $provider)
-                    <tr wire:key="provider-{{ $provider->id }}">
-                        <td class="text-ink">{{ $provider->name }}</td>
-                        <td class="text-muted">{{ $provider->specialty ?? '—' }}</td>
-                        <td class="text-muted">{{ $provider->contact_name ?? $provider->email ?? '—' }}</td>
-                        <td>{{ $provider->active_work_orders_count }}</td>
-                        <td class="text-right whitespace-nowrap">
-                            @can('update', $provider)
-                                <button wire:click="edit({{ $provider->id }})" class="btn-ghost text-xs">Editar</button>
-                            @endcan
-                            @can('delete', $provider)
-                                <button wire:click="delete({{ $provider->id }})" wire:confirm="¿Eliminar este proveedor?" class="text-xs text-neutral-400 hover:text-ink">Eliminar</button>
-                            @endcan
-                        </td>
+        <div class="overflow-x-auto">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Proveedor</th>
+                        <th>Especialidad</th>
+                        <th>Contacto</th>
+                        <th>Órdenes activas</th>
+                        <th></th>
                     </tr>
-                @empty
-                    <tr><td colspan="5" class="text-center text-muted py-8">No hay proveedores registrados todavía.</td></tr>
-                @endforelse
-            </tbody>
-        </table>
+                </thead>
+                <tbody>
+                    @forelse ($providers as $provider)
+                        <tr wire:key="provider-{{ $provider->id }}">
+                            <td><a href="{{ route('providers.show', $provider) }}" wire:navigate class="text-accent-300 hover:text-accent-200">{{ $provider->name }}</a></td>
+                            <td class="text-muted">{{ $provider->specialty ?? '—' }}</td>
+                            <td class="text-muted">{{ $provider->contact_name ?? $provider->email ?? '—' }}</td>
+                            <td>{{ $provider->active_work_orders_count }}</td>
+                            <td class="text-right whitespace-nowrap">
+                                @can('update', $provider)
+                                    <button wire:click="edit({{ $provider->id }})" class="btn-ghost text-xs">Editar</button>
+                                @endcan
+                                @can('delete', $provider)
+                                    <button wire:click="delete({{ $provider->id }})" wire:confirm="¿Eliminar este proveedor?" class="text-xs text-neutral-400 hover:text-ink">Eliminar</button>
+                                @endcan
+                            </td>
+                        </tr>
+                    @empty
+                        <tr><td colspan="5" class="text-center text-muted py-8">No hay proveedores registrados todavía.</td></tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
     </div>
 
     <div class="mt-4">{{ $providers->links() }}</div>

@@ -3,8 +3,10 @@
         <i class="ph ph-squares-four text-accent-300 text-xl"></i>
         <h1 class="m-0 font-medium text-lg text-ink">Análisis de mantenimiento</h1>
     </div>
+</x-slot>
 
-    <div class="flex items-center gap-3">
+<div class="space-y-4">
+    <div class="flex flex-wrap items-center justify-end gap-3">
         @if ($isMultiPlant)
             <select wire:model.live="plantFilter" class="input w-auto">
                 <option value="">Todas las plantas</option>
@@ -21,9 +23,7 @@
             <option value="365">Último año</option>
         </select>
     </div>
-</x-slot>
 
-<div class="space-y-4">
     @php
         $priorityTagClass = fn ($priority) => match ($priority) {
             \App\Enums\WorkOrderPriority::Urgente, \App\Enums\WorkOrderPriority::Alta => 'tag-accent',

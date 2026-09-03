@@ -5,6 +5,7 @@ use App\Livewire\Admin\Users\Index as UsersIndex;
 use App\Livewire\Assets\Index as AssetsIndex;
 use App\Livewire\Assets\Show as AssetsShow;
 use App\Livewire\ChecklistTemplates\Index as ChecklistTemplatesIndex;
+use App\Livewire\Dashboard;
 use App\Livewire\MaintenancePlans\Index as MaintenancePlansIndex;
 use App\Livewire\PreOperationalChecklists\Create as PreOperationalChecklistsCreate;
 use App\Livewire\PreOperationalChecklists\Index as PreOperationalChecklistsIndex;
@@ -21,7 +22,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::redirect('/', '/login');
 
-Route::view('dashboard', 'dashboard')
+Route::get('dashboard', Dashboard::class)
     ->middleware(['auth', 'verified'])
     ->name('dashboard');
 

@@ -3,12 +3,6 @@
         <i class="ph ph-gear-six text-accent-300 text-xl"></i>
         <h1 class="m-0 font-medium text-lg text-ink">{{ $asset->name }}</h1>
     </div>
-
-    <div class="flex items-center gap-3">
-        <button wire:click="openHistory" class="btn btn-secondary">
-            <i class="ph ph-clock-counter-clockwise"></i> Ver historial
-        </button>
-    </div>
 </x-slot>
 
 <div class="space-y-4">
@@ -34,7 +28,13 @@
         };
     @endphp
 
-    <a href="{{ route('assets.index') }}" wire:navigate class="text-sm text-accent-300">&larr; Volver a activos</a>
+    <div class="flex flex-wrap items-center justify-between gap-3">
+        <a href="{{ route('assets.index') }}" wire:navigate class="text-sm text-accent-300">&larr; Volver a activos</a>
+
+        <button wire:click="openHistory" class="btn btn-secondary">
+            <i class="ph ph-clock-counter-clockwise"></i> Ver historial
+        </button>
+    </div>
 
     <div class="card elev-sm p-6">
         <div class="grid grid-cols-1 sm:grid-cols-4 gap-6">
@@ -145,54 +145,58 @@
     <div class="card elev-sm p-6">
         <h2 class="card-title m-0 mb-3">Mantenimiento correctivo</h2>
 
-        <table class="table">
-            <thead>
-                <tr>
-                    <th>N° Orden</th><th>Fecha</th><th>Descripción</th><th>Prioridad</th><th>Estado</th><th>Técnico</th><th>Completada</th>
-                </tr>
-            </thead>
-            <tbody>
-                @forelse ($correctivos as $wo)
-                    <tr wire:key="correctivo-{{ $wo->id }}" class="cursor-pointer" onclick="window.location='{{ route('work-orders.show', $wo) }}'">
-                        <td class="font-mono text-xs text-accent-300">{{ $wo->order_number }}</td>
-                        <td class="text-muted">{{ $wo->opened_at->format('d/m/Y H:i') }}</td>
-                        <td class="text-ink">{{ $wo->failure_description ?? '—' }}</td>
-                        <td><span class="tag {{ $priorityTagClass($wo->priority) }}">{{ $wo->priority->label() }}</span></td>
-                        <td><span class="tag {{ $statusTagClass($wo->status) }}">{{ $wo->status->label() }}</span></td>
-                        <td class="text-muted">{{ $wo->assignedTo->name ?? '—' }}</td>
-                        <td class="text-muted">{{ $wo->completed_at?->format('d/m/Y H:i') ?? '—' }}</td>
+        <div class="overflow-x-auto">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>N° Orden</th><th>Fecha</th><th>Descripción</th><th>Prioridad</th><th>Estado</th><th>Técnico</th><th>Completada</th>
                     </tr>
-                @empty
-                    <tr><td colspan="7" class="text-center text-muted py-8">No hay mantenimientos correctivos registrados.</td></tr>
-                @endforelse
-            </tbody>
-        </table>
+                </thead>
+                <tbody>
+                    @forelse ($correctivos as $wo)
+                        <tr wire:key="correctivo-{{ $wo->id }}" class="cursor-pointer" onclick="window.location='{{ route('work-orders.show', $wo) }}'">
+                            <td class="font-mono text-xs text-accent-300">{{ $wo->order_number }}</td>
+                            <td class="text-muted">{{ $wo->opened_at->format('d/m/Y H:i') }}</td>
+                            <td class="text-ink">{{ $wo->failure_description ?? '—' }}</td>
+                            <td><span class="tag {{ $priorityTagClass($wo->priority) }}">{{ $wo->priority->label() }}</span></td>
+                            <td><span class="tag {{ $statusTagClass($wo->status) }}">{{ $wo->status->label() }}</span></td>
+                            <td class="text-muted">{{ $wo->assignedTo->name ?? '—' }}</td>
+                            <td class="text-muted">{{ $wo->completed_at?->format('d/m/Y H:i') ?? '—' }}</td>
+                        </tr>
+                    @empty
+                        <tr><td colspan="7" class="text-center text-muted py-8">No hay mantenimientos correctivos registrados.</td></tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
     </div>
 
     <div class="card elev-sm p-6">
         <h2 class="card-title m-0 mb-3">Mantenimiento preventivo</h2>
 
-        <table class="table">
-            <thead>
-                <tr>
-                    <th>N° Orden</th><th>Fecha</th><th>Plan</th><th>Estado</th><th>Técnico</th><th>Completada</th>
-                </tr>
-            </thead>
-            <tbody>
-                @forelse ($preventivos as $wo)
-                    <tr wire:key="preventivo-{{ $wo->id }}" class="cursor-pointer" onclick="window.location='{{ route('work-orders.show', $wo) }}'">
-                        <td class="font-mono text-xs text-accent-300">{{ $wo->order_number }}</td>
-                        <td class="text-muted">{{ $wo->opened_at->format('d/m/Y H:i') }}</td>
-                        <td class="text-ink">{{ $wo->maintenancePlan?->name ?? 'Mantenimiento preventivo' }}</td>
-                        <td><span class="tag {{ $statusTagClass($wo->status) }}">{{ $wo->status->label() }}</span></td>
-                        <td class="text-muted">{{ $wo->assignedTo->name ?? '—' }}</td>
-                        <td class="text-muted">{{ $wo->completed_at?->format('d/m/Y H:i') ?? '—' }}</td>
+        <div class="overflow-x-auto">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>N° Orden</th><th>Fecha</th><th>Plan</th><th>Estado</th><th>Técnico</th><th>Completada</th>
                     </tr>
-                @empty
-                    <tr><td colspan="6" class="text-center text-muted py-8">No hay mantenimientos preventivos registrados.</td></tr>
-                @endforelse
-            </tbody>
-        </table>
+                </thead>
+                <tbody>
+                    @forelse ($preventivos as $wo)
+                        <tr wire:key="preventivo-{{ $wo->id }}" class="cursor-pointer" onclick="window.location='{{ route('work-orders.show', $wo) }}'">
+                            <td class="font-mono text-xs text-accent-300">{{ $wo->order_number }}</td>
+                            <td class="text-muted">{{ $wo->opened_at->format('d/m/Y H:i') }}</td>
+                            <td class="text-ink">{{ $wo->maintenancePlan?->name ?? 'Mantenimiento preventivo' }}</td>
+                            <td><span class="tag {{ $statusTagClass($wo->status) }}">{{ $wo->status->label() }}</span></td>
+                            <td class="text-muted">{{ $wo->assignedTo->name ?? '—' }}</td>
+                            <td class="text-muted">{{ $wo->completed_at?->format('d/m/Y H:i') ?? '—' }}</td>
+                        </tr>
+                    @empty
+                        <tr><td colspan="6" class="text-center text-muted py-8">No hay mantenimientos preventivos registrados.</td></tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
     </div>
 
     <div class="card elev-sm p-6">
@@ -218,25 +222,27 @@
         </div>
         <x-input-error :messages="$errors->get('preopExportTo')" class="mt-2" />
 
-        <table class="table mt-4">
-            <thead>
-                <tr>
-                    <th>Fecha</th><th>Resultado</th><th>Acción requerida</th><th>Responsable</th>
-                </tr>
-            </thead>
-            <tbody>
-                @forelse ($preOperationalChecklists as $checklist)
-                    <tr wire:key="preop-{{ $checklist->id }}" class="cursor-pointer" onclick="window.location='{{ route('pre-operational-checklists.show', $checklist) }}'">
-                        <td class="text-muted">{{ $checklist->inspected_at->format('d/m/Y H:i') }}</td>
-                        <td><span class="tag {{ $preopResultTagClass($checklist->result) }}">{{ $checklist->result->label() }}</span></td>
-                        <td class="text-muted">{{ $checklist->required_action->label() }}</td>
-                        <td class="text-muted">{{ $checklist->performedBy->name }}</td>
+        <div class="overflow-x-auto">
+            <table class="table mt-4">
+                <thead>
+                    <tr>
+                        <th>Fecha</th><th>Resultado</th><th>Acción requerida</th><th>Responsable</th>
                     </tr>
-                @empty
-                    <tr><td colspan="4" class="text-center text-muted py-8">No hay listas preoperacionales registradas.</td></tr>
-                @endforelse
-            </tbody>
-        </table>
+                </thead>
+                <tbody>
+                    @forelse ($preOperationalChecklists as $checklist)
+                        <tr wire:key="preop-{{ $checklist->id }}" class="cursor-pointer" onclick="window.location='{{ route('pre-operational-checklists.show', $checklist) }}'">
+                            <td class="text-muted">{{ $checklist->inspected_at->format('d/m/Y H:i') }}</td>
+                            <td><span class="tag {{ $preopResultTagClass($checklist->result) }}">{{ $checklist->result->label() }}</span></td>
+                            <td class="text-muted">{{ $checklist->required_action->label() }}</td>
+                            <td class="text-muted">{{ $checklist->performedBy->name }}</td>
+                        </tr>
+                    @empty
+                        <tr><td colspan="4" class="text-center text-muted py-8">No hay listas preoperacionales registradas.</td></tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
 
         <a href="{{ route('pre-operational-checklists.index', ['asset' => $asset->id]) }}" wire:navigate class="mt-3 inline-block text-xs text-accent-300">Ver todas las listas preoperacionales de este activo &rarr;</a>
     </div>

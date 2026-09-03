@@ -3,14 +3,6 @@
         <i class="ph ph-clipboard-text text-accent-300 text-xl"></i>
         <h1 class="m-0 font-medium text-lg text-ink">Órdenes de trabajo</h1>
     </div>
-
-    @can('create', \App\Models\WorkOrder::class)
-        <div class="flex items-center gap-3">
-            <button wire:click="create" class="btn btn-primary">
-                <i class="ph ph-plus"></i> Crear reporte
-            </button>
-        </div>
-    @endcan
 </x-slot>
 
 <div class="space-y-4">
@@ -22,14 +14,22 @@
         };
     @endphp
 
-    <div class="flex flex-wrap items-center gap-3">
-        <input wire:model.live.debounce.400ms="search" type="text" placeholder="Buscar por N.° de orden, activo o descripción..." class="input w-72">
+    <div class="flex flex-wrap items-center justify-between gap-3">
+        <div class="flex flex-wrap items-center gap-3">
+            <input wire:model.live.debounce.400ms="search" type="text" placeholder="Buscar por N.° de orden, activo o descripción..." class="input w-72">
 
-        <select wire:model.live="typeFilter" class="input w-auto">
-            <option value="">Todos los tipos</option>
-            <option value="correctivo">Correctivo</option>
-            <option value="preventivo">Preventivo</option>
-        </select>
+            <select wire:model.live="typeFilter" class="input w-auto">
+                <option value="">Todos los tipos</option>
+                <option value="correctivo">Correctivo</option>
+                <option value="preventivo">Preventivo</option>
+            </select>
+        </div>
+
+        @can('create', \App\Models\WorkOrder::class)
+            <button wire:click="create" class="btn btn-primary">
+                <i class="ph ph-plus"></i> Crear reporte
+            </button>
+        @endcan
     </div>
 
     <div class="grid grid-cols-1 md:grid-cols-3 gap-3 items-start">
@@ -99,30 +99,32 @@
             </div>
         </div>
 
-        <table class="table mt-4">
-            <thead>
-                <tr>
-                    <th>N° Orden</th><th>Activo</th><th>Descripción</th><th>Prioridad</th><th>Tipo</th><th>Estado</th><th>Abierta</th><th>Completada</th><th>Duración total</th>
-                </tr>
-            </thead>
-            <tbody>
-                @forelse ($historial as $wo)
-                    <tr wire:key="historial-{{ $wo->id }}" class="cursor-pointer" onclick="window.location='{{ route('work-orders.show', $wo) }}'">
-                        <td class="font-mono text-xs text-accent-300">{{ $wo->order_number }}</td>
-                        <td class="text-ink">{{ $wo->asset->code }} — {{ $wo->asset->name }}</td>
-                        <td class="text-muted max-w-xs truncate">{{ $wo->failure_description ?? $wo->type->label() }}</td>
-                        <td><span class="tag {{ $priorityTagClass($wo->priority) }}">{{ $wo->priority->label() }}</span></td>
-                        <td><span class="tag tag-neutral">{{ $wo->type->label() }}</span></td>
-                        <td><span class="tag {{ $wo->status === \App\Enums\WorkOrderStatus::Completada ? 'tag-neutral' : 'tag-outline' }}">{{ $wo->status->label() }}</span></td>
-                        <td class="text-muted">{{ $wo->opened_at->format('d/m/Y H:i') }}</td>
-                        <td class="text-muted">{{ $wo->completed_at?->format('d/m/Y H:i') ?? '—' }}</td>
-                        <td class="text-muted">{{ \App\Models\WorkOrder::formatDurationMinutes($wo->total_minutes) }}</td>
+        <div class="overflow-x-auto">
+            <table class="table mt-4">
+                <thead>
+                    <tr>
+                        <th>N° Orden</th><th>Activo</th><th>Descripción</th><th>Prioridad</th><th>Tipo</th><th>Estado</th><th>Abierta</th><th>Completada</th><th>Duración total</th>
                     </tr>
-                @empty
-                    <tr><td colspan="9" class="text-center text-muted py-8">No hay órdenes completadas o canceladas en este rango.</td></tr>
-                @endforelse
-            </tbody>
-        </table>
+                </thead>
+                <tbody>
+                    @forelse ($historial as $wo)
+                        <tr wire:key="historial-{{ $wo->id }}" class="cursor-pointer" onclick="window.location='{{ route('work-orders.show', $wo) }}'">
+                            <td class="font-mono text-xs text-accent-300">{{ $wo->order_number }}</td>
+                            <td class="text-ink">{{ $wo->asset->code }} — {{ $wo->asset->name }}</td>
+                            <td class="text-muted max-w-xs truncate">{{ $wo->failure_description ?? $wo->type->label() }}</td>
+                            <td><span class="tag {{ $priorityTagClass($wo->priority) }}">{{ $wo->priority->label() }}</span></td>
+                            <td><span class="tag tag-neutral">{{ $wo->type->label() }}</span></td>
+                            <td><span class="tag {{ $wo->status === \App\Enums\WorkOrderStatus::Completada ? 'tag-neutral' : 'tag-outline' }}">{{ $wo->status->label() }}</span></td>
+                            <td class="text-muted">{{ $wo->opened_at->format('d/m/Y H:i') }}</td>
+                            <td class="text-muted">{{ $wo->completed_at?->format('d/m/Y H:i') ?? '—' }}</td>
+                            <td class="text-muted">{{ \App\Models\WorkOrder::formatDurationMinutes($wo->total_minutes) }}</td>
+                        </tr>
+                    @empty
+                        <tr><td colspan="9" class="text-center text-muted py-8">No hay órdenes completadas o canceladas en este rango.</td></tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
 
         <div class="mt-4">{{ $historial->links() }}</div>
     </div>

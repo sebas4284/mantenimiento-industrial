@@ -1,10 +1,17 @@
 @import './nocturne-tokens.css';
+/* Bare subpath: the package's `exports` map does not expose '@phosphor-icons/web/src/regular/style.css', so that (more obvious-looking) path fails to resolve. Do not "fix" this back. */
 @import '@phosphor-icons/web/regular';
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+/*
+ * Nocturne component classes live in Tailwind's `components` layer so that utilities
+ * always win on a specificity tie (e.g. `class="input w-72"`), regardless of the
+ * order these rules appear in this file.
+ */
+@layer components {
 body { margin: 0; font-size: 15px; line-height: 1.55; font-weight: 400; }
 h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-heading); font-weight: var(--font-heading-weight);
@@ -40,11 +47,13 @@ h1, h2, h3, h4, h5, h6 {
 .input {
   width: 100%; min-height: 36px; padding: 6px 10px; font: inherit;
   font-size: 14px; color: var(--color-text); caret-color: var(--color-accent);
-  background: var(--color-surface);
+  background-color: var(--color-surface);
   border: 1px solid var(--color-divider); border-radius: var(--radius-md);
 }
 .input:hover { border-color: color-mix(in srgb, var(--color-text) 45%, transparent); }
 .input:focus-visible { border-color: var(--color-accent); outline-offset: 0; }
+/* Suppress @tailwindcss/forms' default blue focus ring — the accent border is the Nocturne focus affordance. */
+.input:focus { box-shadow: none; }
 textarea.input { min-height: 90px; resize: vertical; }
 
 .card {
@@ -91,3 +100,4 @@ textarea.input { min-height: 90px; resize: vertical; }
   font-size: 20px; margin: 0;
 }
 .dialog-actions { display: flex; justify-content: flex-end; gap: var(--space-2); margin-top: var(--space-2); }
+}
