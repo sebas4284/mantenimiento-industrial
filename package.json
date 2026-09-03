@@ -20,6 +20,7 @@
         "@laravel/multiplex": "^0.4.1"
     },
     "dependencies": {
+        "@phosphor-icons/web": "^2.1.2",
         "apexcharts": "^7.1.0"
     }
 }

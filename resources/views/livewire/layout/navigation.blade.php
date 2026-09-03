@@ -16,163 +16,74 @@ new class extends Component
     }
 }; ?>
 
-<nav x-data="{ open: false }" class="bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700">
-    <!-- Primary Navigation Menu -->
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="flex justify-between h-16">
-            <div class="flex">
-                <!-- Logo -->
-                <div class="shrink-0 flex items-center">
-                    <a href="{{ route('dashboard') }}" wire:navigate>
-                        <x-application-logo class="block h-9 w-auto fill-current text-gray-800 dark:text-gray-200" />
-                    </a>
-                </div>
+@php
+$navItems = [
+    ['route' => 'dashboard', 'pattern' => 'dashboard', 'icon' => 'ph-squares-four', 'label' => 'Dashboard'],
+    ['route' => 'assets.index', 'pattern' => 'assets.*', 'icon' => 'ph-gear-six', 'label' => 'Activos'],
+    ['route' => 'work-orders.index', 'pattern' => 'work-orders.*', 'icon' => 'ph-clipboard-text', 'label' => 'Órdenes'],
+    ['route' => 'maintenance-plans.index', 'pattern' => 'maintenance-plans.index', 'icon' => 'ph-calendar-check', 'label' => 'Planes'],
+    ['route' => 'checklist-templates.index', 'pattern' => 'checklist-templates.index', 'icon' => 'ph-list-checks', 'label' => 'Checklists'],
+    ['route' => 'pre-operational-checklists.index', 'pattern' => 'pre-operational-checklists.*', 'icon' => 'ph-shield-check', 'label' => 'Listas preoperacionales'],
+    ['route' => 'spare-parts.index', 'pattern' => 'spare-parts.index', 'icon' => 'ph-package', 'label' => 'Inventario'],
+    ['route' => 'providers.index', 'pattern' => 'providers.*', 'icon' => 'ph-truck', 'label' => 'Proveedores'],
+];
+$navItemClass = fn (string $pattern) => request()->routeIs($pattern)
+    ? 'bg-accent-500/20 text-accent-300'
+    : 'text-neutral-500 hover:text-neutral-300';
+@endphp
 
-                <!-- Navigation Links -->
-                <div class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
-                    <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')" wire:navigate>
-                        {{ __('Dashboard') }}
-                    </x-nav-link>
-                    <x-nav-link :href="route('assets.index')" :active="request()->routeIs('assets.index')" wire:navigate>
-                        Activos
-                    </x-nav-link>
-                    <x-nav-link :href="route('work-orders.index')" :active="request()->routeIs('work-orders.*')" wire:navigate>
-                        Órdenes
-                    </x-nav-link>
-                    <x-nav-link :href="route('maintenance-plans.index')" :active="request()->routeIs('maintenance-plans.index')" wire:navigate>
-                        Planes
-                    </x-nav-link>
-                    <x-nav-link :href="route('checklist-templates.index')" :active="request()->routeIs('checklist-templates.index')" wire:navigate>
-                        Checklists
-                    </x-nav-link>
-                    <x-nav-link :href="route('pre-operational-checklists.index')" :active="request()->routeIs('pre-operational-checklists.*')" wire:navigate>
-                        Listas preoperacionales
-                    </x-nav-link>
-                    <x-nav-link :href="route('spare-parts.index')" :active="request()->routeIs('spare-parts.index')" wire:navigate>
-                        Inventario
-                    </x-nav-link>
-                    <x-nav-link :href="route('providers.index')" :active="request()->routeIs('providers.*')" wire:navigate>
-                        Proveedores
-                    </x-nav-link>
-                    @if (in_array(auth()->user()->role, [\App\Enums\UserRole::Admin, \App\Enums\UserRole::Supervisor], true))
-                        <x-nav-link :href="route('team.index')" :active="request()->routeIs('team.*')" wire:navigate>
-                            Equipo de trabajo
-                        </x-nav-link>
-                    @endif
-                    @if (auth()->user()->role === \App\Enums\UserRole::Admin)
-                        <x-nav-link :href="route('admin.users.index')" :active="request()->routeIs('admin.users.index')" wire:navigate>
-                            Usuarios
-                        </x-nav-link>
-                        <x-nav-link :href="route('admin.plants.index')" :active="request()->routeIs('admin.plants.index')" wire:navigate>
-                            Plantas
-                        </x-nav-link>
-                    @endif
-                </div>
-            </div>
+<nav class="w-[72px] shrink-0 bg-neutral-900 border-r border-neutral-800 flex flex-col items-center py-4 gap-6">
+    <a href="{{ route('dashboard') }}" wire:navigate
+        class="w-9 h-9 rounded-md bg-accent-800/40 border border-accent-700 flex items-center justify-center text-accent-300 font-medium">
+        M
+    </a>
 
-            <!-- Settings Dropdown -->
-            <div class="hidden sm:flex sm:items-center sm:ms-6">
-                <x-dropdown align="right" width="48">
-                    <x-slot name="trigger">
-                        <button class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-800 hover:text-gray-700 dark:hover:text-gray-300 focus:outline-none transition ease-in-out duration-150">
-                            <div x-data="{{ json_encode(['name' => auth()->user()->name]) }}" x-text="name" x-on:profile-updated.window="name = $event.detail.name"></div>
+    <div class="flex flex-col gap-2 items-center overflow-y-auto">
+        @foreach ($navItems as $item)
+            <a href="{{ route($item['route']) }}" wire:navigate title="{{ $item['label'] }}"
+                class="w-10 h-10 rounded-md flex items-center justify-center {{ $navItemClass($item['pattern']) }}">
+                <i class="ph {{ $item['icon'] }} text-[19px]"></i>
+            </a>
+        @endforeach
 
-                            <div class="ms-1">
-                                <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
-                                    <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
-                                </svg>
-                            </div>
-                        </button>
-                    </x-slot>
+        @if (in_array(auth()->user()->role, [\App\Enums\UserRole::Admin, \App\Enums\UserRole::Supervisor], true))
+            <a href="{{ route('team.index') }}" wire:navigate title="Equipo de trabajo"
+                class="w-10 h-10 rounded-md flex items-center justify-center {{ $navItemClass('team.*') }}">
+                <i class="ph ph-users-three text-[19px]"></i>
+            </a>
+        @endif
 
-                    <x-slot name="content">
-                        <x-dropdown-link :href="route('profile')" wire:navigate>
-                            {{ __('Profile') }}
-                        </x-dropdown-link>
-
-                        <!-- Authentication -->
-                        <button wire:click="logout" class="w-full text-start">
-                            <x-dropdown-link>
-                                {{ __('Log Out') }}
-                            </x-dropdown-link>
-                        </button>
-                    </x-slot>
-                </x-dropdown>
-            </div>
-
-            <!-- Hamburger -->
-            <div class="-me-2 flex items-center sm:hidden">
-                <button @click="open = ! open" class="inline-flex items-center justify-center p-2 rounded-md text-gray-400 dark:text-gray-500 hover:text-gray-500 dark:hover:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-900 focus:outline-none focus:bg-gray-100 dark:focus:bg-gray-900 focus:text-gray-500 dark:focus:text-gray-400 transition duration-150 ease-in-out">
-                    <svg class="h-6 w-6" stroke="currentColor" fill="none" viewBox="0 0 24 24">
-                        <path :class="{'hidden': open, 'inline-flex': ! open }" class="inline-flex" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
-                        <path :class="{'hidden': ! open, 'inline-flex': open }" class="hidden" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                </button>
-            </div>
-        </div>
+        @if (auth()->user()->role === \App\Enums\UserRole::Admin)
+            <a href="{{ route('admin.users.index') }}" wire:navigate title="Usuarios"
+                class="w-10 h-10 rounded-md flex items-center justify-center {{ $navItemClass('admin.users.index') }}">
+                <i class="ph ph-users text-[19px]"></i>
+            </a>
+            <a href="{{ route('admin.plants.index') }}" wire:navigate title="Plantas"
+                class="w-10 h-10 rounded-md flex items-center justify-center {{ $navItemClass('admin.plants.index') }}">
+                <i class="ph ph-factory text-[19px]"></i>
+            </a>
+        @endif
     </div>
 
-    <!-- Responsive Navigation Menu -->
-    <div :class="{'block': open, 'hidden': ! open}" class="hidden sm:hidden">
-        <div class="pt-2 pb-3 space-y-1">
-            <x-responsive-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')" wire:navigate>
-                {{ __('Dashboard') }}
-            </x-responsive-nav-link>
-            <x-responsive-nav-link :href="route('assets.index')" :active="request()->routeIs('assets.index')" wire:navigate>
-                Activos
-            </x-responsive-nav-link>
-            <x-responsive-nav-link :href="route('work-orders.index')" :active="request()->routeIs('work-orders.*')" wire:navigate>
-                Órdenes
-            </x-responsive-nav-link>
-            <x-responsive-nav-link :href="route('maintenance-plans.index')" :active="request()->routeIs('maintenance-plans.index')" wire:navigate>
-                Planes
-            </x-responsive-nav-link>
-            <x-responsive-nav-link :href="route('checklist-templates.index')" :active="request()->routeIs('checklist-templates.index')" wire:navigate>
-                Checklists
-            </x-responsive-nav-link>
-            <x-responsive-nav-link :href="route('pre-operational-checklists.index')" :active="request()->routeIs('pre-operational-checklists.*')" wire:navigate>
-                Listas preoperacionales
-            </x-responsive-nav-link>
-            <x-responsive-nav-link :href="route('spare-parts.index')" :active="request()->routeIs('spare-parts.index')" wire:navigate>
-                Inventario
-            </x-responsive-nav-link>
-            <x-responsive-nav-link :href="route('providers.index')" :active="request()->routeIs('providers.*')" wire:navigate>
-                Proveedores
-            </x-responsive-nav-link>
-            @if (in_array(auth()->user()->role, [\App\Enums\UserRole::Admin, \App\Enums\UserRole::Supervisor], true))
-                <x-responsive-nav-link :href="route('team.index')" :active="request()->routeIs('team.*')" wire:navigate>
-                    Equipo de trabajo
-                </x-responsive-nav-link>
-            @endif
-            @if (auth()->user()->role === \App\Enums\UserRole::Admin)
-                <x-responsive-nav-link :href="route('admin.users.index')" :active="request()->routeIs('admin.users.index')" wire:navigate>
-                    Usuarios
-                </x-responsive-nav-link>
-                <x-responsive-nav-link :href="route('admin.plants.index')" :active="request()->routeIs('admin.plants.index')" wire:navigate>
-                    Plantas
-                </x-responsive-nav-link>
-            @endif
-        </div>
-
-        <!-- Responsive Settings Options -->
-        <div class="pt-4 pb-1 border-t border-gray-200 dark:border-gray-600">
-            <div class="px-4">
-                <div class="font-medium text-base text-gray-800 dark:text-gray-200" x-data="{{ json_encode(['name' => auth()->user()->name]) }}" x-text="name" x-on:profile-updated.window="name = $event.detail.name"></div>
-                <div class="font-medium text-sm text-gray-500">{{ auth()->user()->email }}</div>
-            </div>
-
-            <div class="mt-3 space-y-1">
-                <x-responsive-nav-link :href="route('profile')" wire:navigate>
-                    {{ __('Profile') }}
-                </x-responsive-nav-link>
-
-                <!-- Authentication -->
-                <button wire:click="logout" class="w-full text-start">
-                    <x-responsive-nav-link>
-                        {{ __('Log Out') }}
-                    </x-responsive-nav-link>
+    <div class="mt-auto">
+        <x-dropdown align="right" width="48">
+            <x-slot name="trigger">
+                <button class="w-8 h-8 rounded-full bg-neutral-700 flex items-center justify-center text-[11px] text-ink" title="{{ auth()->user()->name }}">
+                    {{ collect(explode(' ', auth()->user()->name))->map(fn ($n) => mb_substr($n, 0, 1))->take(2)->implode('') }}
                 </button>
-            </div>
-        </div>
+            </x-slot>
+
+            <x-slot name="content">
+                <x-dropdown-link :href="route('profile')" wire:navigate>
+                    {{ __('Profile') }}
+                </x-dropdown-link>
+
+                <button wire:click="logout" class="w-full text-start">
+                    <x-dropdown-link>
+                        {{ __('Log Out') }}
+                    </x-dropdown-link>
+                </button>
+            </x-slot>
+        </x-dropdown>
     </div>
 </nav>
