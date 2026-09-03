@@ -1,11 +1,16 @@
 <div>
     <div class="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
         <div class="flex flex-wrap items-center justify-between gap-4">
-            <select wire:model.live="typeFilter" class="rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 shadow-sm text-sm">
-                <option value="">Todos los tipos</option>
-                <option value="correctivo">Correctivo</option>
-                <option value="preventivo">Preventivo</option>
-            </select>
+            <div class="flex flex-wrap items-center gap-3">
+                <input wire:model.live.debounce.400ms="search" type="text" placeholder="Buscar por N.° de orden, activo o descripción..."
+                    class="w-72 rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm">
+
+                <select wire:model.live="typeFilter" class="rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 shadow-sm text-sm">
+                    <option value="">Todos los tipos</option>
+                    <option value="correctivo">Correctivo</option>
+                    <option value="preventivo">Preventivo</option>
+                </select>
+            </div>
 
             @can('create', \App\Models\WorkOrder::class)
                 <button wire:click="create" class="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500">
@@ -15,7 +20,7 @@
             @endcan
         </div>
 
-        <div class="mt-6 grid grid-cols-1 md:grid-cols-5 gap-4 items-start">
+        <div class="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4 items-start">
             @foreach ($columns as $column)
                 <div class="rounded-xl bg-gray-50 dark:bg-gray-900/40 ring-1 ring-gray-200 dark:ring-gray-800 p-3">
                     <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center justify-between">
@@ -27,7 +32,7 @@
                         @forelse ($workOrdersByStatus->get($column->value, collect()) as $wo)
                             <div wire:key="wo-{{ $wo->id }}" class="rounded-lg bg-white dark:bg-gray-800 shadow-sm ring-1 ring-gray-200 dark:ring-gray-700 p-3">
                                 <a href="{{ route('work-orders.show', $wo) }}" wire:navigate class="block">
-                                    <p class="text-xs font-mono font-semibold text-indigo-600 dark:text-indigo-400">{{ $wo->order_number }}</p>
+                                    <p class="text-sm font-mono font-bold text-indigo-600 dark:text-indigo-400">{{ $wo->order_number }}</p>
                                     <p class="text-xs font-mono text-gray-400">{{ $wo->asset->code }}</p>
                                     <p class="text-sm font-medium text-gray-900 dark:text-gray-100">{{ $wo->asset->name }}</p>
                                     <p class="text-xs text-gray-500 dark:text-gray-400 line-clamp-2 mt-1">{{ $wo->failure_description ?? $wo->type->label() }}</p>
@@ -43,7 +48,7 @@
                                 <div class="mt-2 flex flex-wrap gap-2 border-t border-gray-100 dark:border-gray-700 pt-2">
                                     @can('update', $wo)
                                         @if ($column === \App\Enums\WorkOrderStatus::Abierta)
-                                            <button wire:click="take({{ $wo->id }})" class="text-xs font-medium text-indigo-600 hover:text-indigo-500">Tomar</button>
+                                            <button wire:click="take({{ $wo->id }})" class="text-xs font-medium text-indigo-600 hover:text-indigo-500">Iniciar</button>
                                         @endif
                                         @if ($column === \App\Enums\WorkOrderStatus::EnProgreso)
                                             <button wire:click="transition({{ $wo->id }}, 'en_espera')" class="text-xs font-medium text-gray-600 dark:text-gray-300 hover:text-gray-900">Pausar</button>
@@ -64,6 +69,60 @@
                     </div>
                 </div>
             @endforeach
+        </div>
+
+        <div class="mt-8 rounded-xl bg-white dark:bg-gray-800 shadow-sm ring-1 ring-gray-200 dark:ring-gray-700 p-6">
+            <div class="flex flex-wrap items-center justify-between gap-4">
+                <h2 class="font-semibold text-gray-900 dark:text-gray-100">Historial (completadas y canceladas)</h2>
+
+                <div class="flex flex-wrap items-end gap-3">
+                    <div>
+                        <x-input-label for="dateFrom" value="Desde" />
+                        <input wire:model.live="dateFrom" type="date" id="dateFrom" class="mt-1 rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 shadow-sm text-sm">
+                    </div>
+                    <div>
+                        <x-input-label for="dateTo" value="Hasta" />
+                        <input wire:model.live="dateTo" type="date" id="dateTo" class="mt-1 rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 shadow-sm text-sm">
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-4 overflow-x-auto rounded-xl ring-1 ring-gray-200 dark:ring-gray-700">
+                <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700 text-sm">
+                    <thead class="bg-gray-50 dark:bg-gray-900/40">
+                        <tr class="text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
+                            <th class="px-4 py-3">N° Orden</th>
+                            <th class="px-4 py-3">Activo</th>
+                            <th class="px-4 py-3">Descripción</th>
+                            <th class="px-4 py-3">Prioridad</th>
+                            <th class="px-4 py-3">Tipo</th>
+                            <th class="px-4 py-3">Estado</th>
+                            <th class="px-4 py-3">Abierta</th>
+                            <th class="px-4 py-3">Completada</th>
+                            <th class="px-4 py-3">Duración total</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
+                        @forelse ($historial as $wo)
+                            <tr wire:key="historial-{{ $wo->id }}" class="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-900/30" onclick="window.location='{{ route('work-orders.show', $wo) }}'">
+                                <td class="px-4 py-3 font-mono text-xs font-bold text-indigo-600 dark:text-indigo-400">{{ $wo->order_number }}</td>
+                                <td class="px-4 py-3 text-gray-800 dark:text-gray-200">{{ $wo->asset->code }} — {{ $wo->asset->name }}</td>
+                                <td class="px-4 py-3 text-gray-600 dark:text-gray-300 max-w-xs truncate">{{ $wo->failure_description ?? $wo->type->label() }}</td>
+                                <td class="px-4 py-3"><x-badge :color="$wo->priority->color()">{{ $wo->priority->label() }}</x-badge></td>
+                                <td class="px-4 py-3"><x-badge color="zinc">{{ $wo->type->label() }}</x-badge></td>
+                                <td class="px-4 py-3"><x-badge :color="$wo->status->color()">{{ $wo->status->label() }}</x-badge></td>
+                                <td class="px-4 py-3 text-gray-600 dark:text-gray-300">{{ $wo->opened_at->format('d/m/Y H:i') }}</td>
+                                <td class="px-4 py-3 text-gray-600 dark:text-gray-300">{{ $wo->completed_at?->format('d/m/Y H:i') ?? '—' }}</td>
+                                <td class="px-4 py-3 text-gray-600 dark:text-gray-300">{{ \App\Models\WorkOrder::formatDurationMinutes($wo->total_minutes) }}</td>
+                            </tr>
+                        @empty
+                            <tr><td colspan="9" class="px-4 py-8 text-center text-sm text-gray-500 dark:text-gray-400">No hay órdenes completadas o canceladas en este rango.</td></tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="mt-4">{{ $historial->links() }}</div>
         </div>
     </div>
 

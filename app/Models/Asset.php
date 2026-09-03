@@ -57,6 +57,11 @@ class Asset extends Model
         return $this->hasMany(MaintenancePlan::class);
     }
 
+    public function preOperationalChecklists(): HasMany
+    {
+        return $this->hasMany(PreOperationalChecklist::class);
+    }
+
     public function attachments(): MorphMany
     {
         return $this->morphMany(Attachment::class, 'attachable');

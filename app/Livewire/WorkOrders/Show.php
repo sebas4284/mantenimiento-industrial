@@ -3,7 +3,9 @@
 namespace App\Livewire\WorkOrders;
 
 use App\Enums\WorkOrderExecutionType;
+use App\Enums\WorkOrderPriority;
 use App\Enums\WorkOrderStatus;
+use App\Enums\WorkOrderType;
 use App\Models\Attachment;
 use App\Models\Provider;
 use App\Models\SparePart;
@@ -11,7 +13,9 @@ use App\Models\SparePartUsage;
 use App\Models\User;
 use App\Models\WorkOrder;
 use App\Models\WorkOrderChecklistResult;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rules\Enum;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 use Livewire\WithFileUploads;
@@ -31,6 +35,20 @@ class Show extends Component
 
     public ?int $support_collaborator_id = null;
 
+    public ?string $invoice_number = null;
+
+    public ?string $amount_paid = null;
+
+    public bool $showEditModal = false;
+
+    public string $edit_type = '';
+
+    public string $edit_priority = '';
+
+    public string $edit_execution_type = '';
+
+    public string $edit_failure_description = '';
+
     /** @var array<int, array{passed: bool|null, notes: string|null}> */
     public array $checklist = [];
 
@@ -49,6 +67,8 @@ class Show extends Component
         $this->assigned_to = $workOrder->assigned_to;
         $this->provider_id = $workOrder->provider_id;
         $this->support_collaborator_id = $workOrder->support_collaborator_id;
+        $this->invoice_number = $workOrder->invoice_number;
+        $this->amount_paid = $workOrder->amount_paid;
 
         if ($template = $this->workOrder->maintenancePlan?->checklistTemplate) {
             $existing = $this->workOrder->checklistResults->keyBy('checklist_item_id');
@@ -141,6 +161,73 @@ class Show extends Component
         $this->workOrder->refresh();
     }
 
+    public function openEditModal(): void
+    {
+        $this->authorize('update', $this->workOrder);
+
+        $this->edit_type = $this->workOrder->type->value;
+        $this->edit_priority = $this->workOrder->priority->value;
+        $this->edit_execution_type = $this->workOrder->execution_type->value;
+        $this->edit_failure_description = (string) $this->workOrder->failure_description;
+        $this->showEditModal = true;
+    }
+
+    public function closeEditModal(): void
+    {
+        $this->showEditModal = false;
+    }
+
+    public function saveEdit(): void
+    {
+        $this->authorize('update', $this->workOrder);
+
+        $validated = $this->validate([
+            'edit_type' => ['required', new Enum(WorkOrderType::class)],
+            'edit_priority' => ['required', new Enum(WorkOrderPriority::class)],
+            'edit_execution_type' => ['required', new Enum(WorkOrderExecutionType::class)],
+            'edit_failure_description' => ['required', 'string', 'max:2000'],
+        ]);
+
+        $this->workOrder->update([
+            'type' => $validated['edit_type'],
+            'priority' => $validated['edit_priority'],
+            'execution_type' => $validated['edit_execution_type'],
+            'failure_description' => $validated['edit_failure_description'],
+        ]);
+
+        $this->workOrder->refresh();
+        $this->showEditModal = false;
+    }
+
+    public function saveInvoiceInfo(): void
+    {
+        $this->authorize('update', $this->workOrder);
+
+        $this->validate([
+            'invoice_number' => ['nullable', 'string', 'max:100'],
+            'amount_paid' => ['nullable', 'numeric', 'min:0'],
+        ]);
+
+        $this->workOrder->update([
+            'invoice_number' => $this->invoice_number,
+            'amount_paid' => $this->amount_paid,
+        ]);
+    }
+
+    public function downloadReport()
+    {
+        $this->authorize('view', $this->workOrder);
+
+        $this->workOrder->load('checklistResults.checklistItem');
+
+        $pdf = Pdf::loadView('work-orders.pdf', ['workOrder' => $this->workOrder]);
+
+        return response()->streamDownload(
+            fn () => print ($pdf->output()),
+            "orden-{$this->workOrder->order_number}.pdf",
+        );
+    }
+
     public function addSparePartUsage(): void
     {
         $this->authorize('registerUsage', SparePart::class);
@@ -199,6 +286,9 @@ class Show extends Component
                 ->get(),
             'providers' => Provider::orderBy('name')->get(),
             'spareParts' => SparePart::withoutGlobalScopes()->where('plant_id', $plantId)->orderBy('name')->get(),
+            'types' => WorkOrderType::cases(),
+            'priorities' => WorkOrderPriority::cases(),
+            'executionTypes' => WorkOrderExecutionType::cases(),
         ]);
     }
 }

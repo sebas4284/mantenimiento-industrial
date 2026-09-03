@@ -174,6 +174,58 @@
         </div>
     </div>
 
+    <div class="rounded-xl bg-white dark:bg-gray-800 shadow-sm ring-1 ring-gray-200 dark:ring-gray-700 p-6">
+        <div class="flex flex-wrap items-end justify-between gap-4">
+            <div>
+                <h2 class="font-semibold text-gray-900 dark:text-gray-100">Listas preoperacionales</h2>
+                <p class="text-xs text-gray-400 mt-0.5">Inspecciones de seguridad registradas antes de iniciar turno.</p>
+            </div>
+
+            <form wire:submit="exportPreOperationalChecklists" class="flex flex-wrap items-end gap-3">
+                <div>
+                    <x-input-label for="preopExportFrom" value="Desde" />
+                    <x-text-input wire:model="preopExportFrom" id="preopExportFrom" type="date" class="mt-1 block text-sm" />
+                </div>
+                <div>
+                    <x-input-label for="preopExportTo" value="Hasta" />
+                    <x-text-input wire:model="preopExportTo" id="preopExportTo" type="date" class="mt-1 block text-sm" />
+                </div>
+                <x-secondary-button type="submit">
+                    <svg class="h-4 w-4 mr-1.5 -ml-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" /></svg>
+                    Descargar Excel
+                </x-secondary-button>
+            </form>
+        </div>
+        <x-input-error :messages="$errors->get('preopExportTo')" class="mt-2" />
+
+        <div class="mt-4 overflow-x-auto rounded-xl ring-1 ring-gray-200 dark:ring-gray-700">
+            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700 text-sm">
+                <thead class="bg-gray-50 dark:bg-gray-900/40">
+                    <tr class="text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
+                        <th class="px-4 py-3">Fecha</th>
+                        <th class="px-4 py-3">Resultado</th>
+                        <th class="px-4 py-3">Acción requerida</th>
+                        <th class="px-4 py-3">Responsable</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
+                    @forelse ($preOperationalChecklists as $checklist)
+                        <tr wire:key="preop-{{ $checklist->id }}" class="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-900/30" onclick="window.location='{{ route('pre-operational-checklists.show', $checklist) }}'">
+                            <td class="px-4 py-3 text-gray-600 dark:text-gray-300">{{ $checklist->inspected_at->format('d/m/Y H:i') }}</td>
+                            <td class="px-4 py-3"><x-badge :color="$checklist->result->color()">{{ $checklist->result->label() }}</x-badge></td>
+                            <td class="px-4 py-3 text-gray-600 dark:text-gray-300">{{ $checklist->required_action->label() }}</td>
+                            <td class="px-4 py-3 text-gray-600 dark:text-gray-300">{{ $checklist->performedBy->name }}</td>
+                        </tr>
+                    @empty
+                        <tr><td colspan="4" class="px-4 py-8 text-center text-sm text-gray-500 dark:text-gray-400">No hay listas preoperacionales registradas.</td></tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+
+        <a href="{{ route('pre-operational-checklists.index', ['asset' => $asset->id]) }}" wire:navigate class="mt-3 inline-block text-xs font-medium text-indigo-600 hover:text-indigo-500">Ver todas las listas preoperacionales de este activo &rarr;</a>
+    </div>
+
     @if ($showHistory)
         <div class="fixed inset-0 z-50" wire:transition>
             <div class="fixed inset-0 bg-gray-900/50" wire:click="closeHistory"></div>

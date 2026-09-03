@@ -45,6 +45,9 @@ new class extends Component
                     <x-nav-link :href="route('checklist-templates.index')" :active="request()->routeIs('checklist-templates.index')" wire:navigate>
                         Checklists
                     </x-nav-link>
+                    <x-nav-link :href="route('pre-operational-checklists.index')" :active="request()->routeIs('pre-operational-checklists.*')" wire:navigate>
+                        Listas preoperacionales
+                    </x-nav-link>
                     <x-nav-link :href="route('spare-parts.index')" :active="request()->routeIs('spare-parts.index')" wire:navigate>
                         Inventario
                     </x-nav-link>
@@ -126,6 +129,9 @@ new class extends Component
             </x-responsive-nav-link>
             <x-responsive-nav-link :href="route('checklist-templates.index')" :active="request()->routeIs('checklist-templates.index')" wire:navigate>
                 Checklists
+            </x-responsive-nav-link>
+            <x-responsive-nav-link :href="route('pre-operational-checklists.index')" :active="request()->routeIs('pre-operational-checklists.*')" wire:navigate>
+                Listas preoperacionales
             </x-responsive-nav-link>
             <x-responsive-nav-link :href="route('spare-parts.index')" :active="request()->routeIs('spare-parts.index')" wire:navigate>
                 Inventario

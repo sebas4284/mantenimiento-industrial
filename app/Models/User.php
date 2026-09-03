@@ -53,4 +53,9 @@ class User extends Authenticatable
     {
         return $this->hasMany(WorkOrder::class, 'support_collaborator_id');
     }
+
+    public function performedPreOperationalChecklists(): HasMany
+    {
+        return $this->hasMany(PreOperationalChecklist::class, 'performed_by');
+    }
 }
