@@ -20,6 +20,8 @@
 - No SQL that isn't SQLite-portable — the test suite runs on `sqlite`/`:memory:` (see `phpunit.xml`). Do not use `orderByRaw` with MySQL-only functions (e.g. `FIELD()`).
 - Run `vendor/bin/pint --dirty --format agent` after PHP changes in every task that touches a `.php` file.
 
+**Reconciliation note (added after a concurrent merge landed mid-planning):** commit `f293282` ("Agregar edicion/factura/PDF de ordenes, tablero reorganizado y listas preoperacionales") merged into `main` while this plan was being written, changing files Tasks 1, 4, 7 and 8 depend on. Tasks 1, 4, 7 and 8 below already reflect the post-merge reality (3-status kanban + separate history table in Órdenes, a "Listas preoperacionales" nav item and asset-detail section, `barryvdh/laravel-dompdf` as a new composer dependency). Tasks 2, 3, 5, 6 are untouched by that merge and are unaffected. One pre-existing, unrelated failure exists in the baseline: `tests/Feature/WorkOrderReportTest::test_downloading_the_report_returns_a_pdf` fails with `Class "Barryvdh\DomPDF\Facade\Pdf" not found` because `composer install` cannot complete in this environment (local SSL/certificate interception, unrelated to this plan). Do not attempt to fix that dependency as part of any task in this plan — it is out of scope; each implementer should confirm their own task's tests pass and ignore that specific pre-existing failure when running the broader suite.
+
 ---
 
 ### Task 1: Global Nocturne shell (tokens, Inter, Phosphor icons, rail nav, top bar)
@@ -327,6 +329,7 @@ $navItems = [
     ['route' => 'work-orders.index', 'pattern' => 'work-orders.*', 'icon' => 'ph-clipboard-text', 'label' => 'Órdenes'],
     ['route' => 'maintenance-plans.index', 'pattern' => 'maintenance-plans.index', 'icon' => 'ph-calendar-check', 'label' => 'Planes'],
     ['route' => 'checklist-templates.index', 'pattern' => 'checklist-templates.index', 'icon' => 'ph-list-checks', 'label' => 'Checklists'],
+    ['route' => 'pre-operational-checklists.index', 'pattern' => 'pre-operational-checklists.*', 'icon' => 'ph-shield-check', 'label' => 'Listas preoperacionales'],
     ['route' => 'spare-parts.index', 'pattern' => 'spare-parts.index', 'icon' => 'ph-package', 'label' => 'Inventario'],
     ['route' => 'providers.index', 'pattern' => 'providers.*', 'icon' => 'ph-truck', 'label' => 'Proveedores'],
 ];
@@ -1108,14 +1111,13 @@ git commit -m "feat: redesign Dashboard view in the Nocturne style"
 
 ---
 
-### Task 4: Órdenes de trabajo view — kanban redesign
+### Task 4: Órdenes de trabajo view — kanban + history redesign
 
 **Files:**
 - Modify: `resources/views/livewire/work-orders/index.blade.php`
 
 **Interfaces:**
-- Consumes: Task 1's `header` slot and CSS classes. No PHP changes — `App\Livewire\WorkOrders\Index` is untouched; all `wire:click`/`wire:model` targets (`create`, `take`, `transition`, `closeModal`, `save`, the `typeFilter`/`asset_id`/`type`/`priority`/`execution_type`/`provider_id`/`failure_description` bindings) and `@can` gates are identical to today.
-- Produces: nothing consumed elsewhere.
+- Consumes: Task 1's `header` slot and CSS classes. No PHP changes — `App\Livewire\WorkOrders\Index` is untouched; all `wire:click`/`wire:model` targets (`create`, `take`, `transition`, `closeModal`, `save`, the `search`/`typeFilter`/`dateFrom`/`dateTo`/`asset_id`/`type`/`priority`/`execution_type`/`provider_id`/`failure_description` bindings) and `@can` gates are identical to today. This component's board is 3 columns (only `WorkOrderStatus::isOpen()` cases — Abierta/EnProgreso/EnEspera; Completada/Cancelada live in the separate paginated `historial`), per the current `render()` — do not reintroduce a 5-column board.
 
 - [ ] **Step 1: Replace the view**
 
@@ -1137,7 +1139,7 @@ Replace `resources/views/livewire/work-orders/index.blade.php`:
     @endcan
 </x-slot>
 
-<div>
+<div class="space-y-4">
     @php
         $priorityTagClass = fn ($priority) => match ($priority) {
             \App\Enums\WorkOrderPriority::Urgente, \App\Enums\WorkOrderPriority::Alta => 'tag-accent',
@@ -1146,13 +1148,17 @@ Replace `resources/views/livewire/work-orders/index.blade.php`:
         };
     @endphp
 
-    <select wire:model.live="typeFilter" class="input w-auto mb-4">
-        <option value="">Todos los tipos</option>
-        <option value="correctivo">Correctivo</option>
-        <option value="preventivo">Preventivo</option>
-    </select>
+    <div class="flex flex-wrap items-center gap-3">
+        <input wire:model.live.debounce.400ms="search" type="text" placeholder="Buscar por N.° de orden, activo o descripción..." class="input w-72">
 
-    <div class="grid grid-cols-1 md:grid-cols-5 gap-3 items-start">
+        <select wire:model.live="typeFilter" class="input w-auto">
+            <option value="">Todos los tipos</option>
+            <option value="correctivo">Correctivo</option>
+            <option value="preventivo">Preventivo</option>
+        </select>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-3 items-start">
         @foreach ($columns as $column)
             <div class="bg-neutral-900 border border-neutral-800 rounded-md p-3 flex flex-col gap-3">
                 <h3 class="text-sm text-neutral-300 flex items-center justify-between m-0">
@@ -1180,7 +1186,7 @@ Replace `resources/views/livewire/work-orders/index.blade.php`:
                             <div class="mt-1 flex flex-wrap gap-3 border-t border-neutral-800 pt-2">
                                 @can('update', $wo)
                                     @if ($column === \App\Enums\WorkOrderStatus::Abierta)
-                                        <button wire:click="take({{ $wo->id }})" class="btn-ghost text-xs">Tomar</button>
+                                        <button wire:click="take({{ $wo->id }})" class="btn-ghost text-xs">Iniciar</button>
                                     @endif
                                     @if ($column === \App\Enums\WorkOrderStatus::EnProgreso)
                                         <button wire:click="transition({{ $wo->id }}, 'en_espera')" class="text-xs text-neutral-300 hover:text-ink">Pausar</button>
@@ -1201,6 +1207,50 @@ Replace `resources/views/livewire/work-orders/index.blade.php`:
                 </div>
             </div>
         @endforeach
+    </div>
+
+    <div class="card elev-sm p-4">
+        <div class="flex flex-wrap items-center justify-between gap-4">
+            <h2 class="card-title m-0">Historial (completadas y canceladas)</h2>
+
+            <div class="flex flex-wrap items-end gap-3">
+                <div class="field">
+                    <label>Desde</label>
+                    <input wire:model.live="dateFrom" type="date" class="input">
+                </div>
+                <div class="field">
+                    <label>Hasta</label>
+                    <input wire:model.live="dateTo" type="date" class="input">
+                </div>
+            </div>
+        </div>
+
+        <table class="table mt-4">
+            <thead>
+                <tr>
+                    <th>N° Orden</th><th>Activo</th><th>Descripción</th><th>Prioridad</th><th>Tipo</th><th>Estado</th><th>Abierta</th><th>Completada</th><th>Duración total</th>
+                </tr>
+            </thead>
+            <tbody>
+                @forelse ($historial as $wo)
+                    <tr wire:key="historial-{{ $wo->id }}" class="cursor-pointer" onclick="window.location='{{ route('work-orders.show', $wo) }}'">
+                        <td class="font-mono text-xs text-accent-300">{{ $wo->order_number }}</td>
+                        <td class="text-ink">{{ $wo->asset->code }} — {{ $wo->asset->name }}</td>
+                        <td class="text-muted max-w-xs truncate">{{ $wo->failure_description ?? $wo->type->label() }}</td>
+                        <td><span class="tag {{ $priorityTagClass($wo->priority) }}">{{ $wo->priority->label() }}</span></td>
+                        <td><span class="tag tag-neutral">{{ $wo->type->label() }}</span></td>
+                        <td><span class="tag {{ $wo->status === \App\Enums\WorkOrderStatus::Completada ? 'tag-neutral' : 'tag-outline' }}">{{ $wo->status->label() }}</span></td>
+                        <td class="text-muted">{{ $wo->opened_at->format('d/m/Y H:i') }}</td>
+                        <td class="text-muted">{{ $wo->completed_at?->format('d/m/Y H:i') ?? '—' }}</td>
+                        <td class="text-muted">{{ \App\Models\WorkOrder::formatDurationMinutes($wo->total_minutes) }}</td>
+                    </tr>
+                @empty
+                    <tr><td colspan="9" class="text-center text-muted py-8">No hay órdenes completadas o canceladas en este rango.</td></tr>
+                @endforelse
+            </tbody>
+        </table>
+
+        <div class="mt-4">{{ $historial->links() }}</div>
     </div>
 
     @if ($showModal)
@@ -1281,14 +1331,15 @@ Replace `resources/views/livewire/work-orders/index.blade.php`:
 </div>
 ```
 
-- [ ] **Step 2: Run the existing work-order test suite**
+- [ ] **Step 2: Run the existing work-order test suites**
 
 Run: `php artisan test --filter=WorkOrderAssignmentTest`
-Expected: PASS unchanged (that test targets `App\Livewire\WorkOrders\Show`, a different component untouched by this task — this confirms nothing else regressed by running the fuller suite in Task 9; this step is a quick sanity check that the app still boots test-wise).
+Run: `php artisan test --filter=WorkOrdersBoardTest`
+Expected: both PASS unchanged (they exercise `App\Livewire\WorkOrders\Show` and `App\Livewire\WorkOrders\Index`'s query/filter behavior respectively — no PHP changed in this task, so this confirms the view rewrite didn't alter any Livewire-visible behavior these tests assert on, e.g. via `assertSee`).
 
 - [ ] **Step 3: Manual verification**
 
-Open `/ordenes`. Confirm the 5 columns render, "Crear reporte" opens the dialog and creates an order, and Tomar/Pausar/Completar/Reanudar/Cancelar buttons still work and respect permissions for a Técnico user vs. an Admin.
+Open `/ordenes`. Confirm the 3 columns (Abierta/En progreso/En espera) render, the search box and type filter narrow the board, "Crear reporte" opens the dialog and creates an order, Iniciar/Pausar/Completar/Reanudar/Cancelar buttons still work and respect permissions for a Técnico user vs. an Admin, and the "Historial" table below the board lists completed/cancelled orders with working date-range filters and pagination.
 
 - [ ] **Step 4: Commit**
 
@@ -1554,7 +1605,7 @@ git commit -m "feat: redesign Proveedores as a Nocturne table"
 - Test: `tests/Feature/AssetShowTest.php` (create)
 
 **Interfaces:**
-- Produces: view data `mtbfHours` (`?float`), `mttrHours` (`?float`), `nextPreventiveDate` (`?Carbon`), consumed by Task 8.
+- Produces: view data `mtbfHours` (`?float`), `mttrHours` (`?float`), `nextPreventiveDate` (`?Carbon`), consumed by Task 8. This task ADDS to the current `app/Livewire/Assets/Show.php` (which already has pre-operational-checklist export support from a concurrently-merged feature — `preopExportFrom`/`preopExportTo`/`exportPreOperationalChecklists()`/the `preOperationalChecklists` view key) — it does not replace or remove any of that; Task 8 depends on `preOperationalChecklists` still being present untouched.
 
 - [ ] **Step 1: Write the failing test**
 
@@ -1637,7 +1688,7 @@ Expected: FAIL — `mtbfHours`/`mttrHours`/`nextPreventiveDate` are undefined vi
 
 - [ ] **Step 3: Implement**
 
-Replace `app/Livewire/Assets/Show.php`:
+The current `app/Livewire/Assets/Show.php` (as of the concurrent pre-operational-checklists merge) already has `preopExportFrom`/`preopExportTo`/`exportPreOperationalChecklists()` and a `preOperationalChecklists` view key — keep all of that. Add the `WorkOrderStatus` and `Collection` imports, add three private methods, and add three keys to the `render()` view array. The full resulting file:
 
 ```php
 <?php
@@ -1647,6 +1698,7 @@ namespace App\Livewire\Assets;
 use App\Enums\WorkOrderStatus;
 use App\Enums\WorkOrderType;
 use App\Exports\AssetMaintenanceExport;
+use App\Exports\PreOperationalChecklistExport;
 use App\Models\Asset;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
@@ -1664,6 +1716,10 @@ class Show extends Component
     public string $exportFrom = '';
 
     public string $exportTo = '';
+
+    public string $preopExportFrom = '';
+
+    public string $preopExportTo = '';
 
     public function mount(Asset $asset): void
     {
@@ -1698,6 +1754,22 @@ class Show extends Component
         );
     }
 
+    public function exportPreOperationalChecklists()
+    {
+        $validated = $this->validate([
+            'preopExportFrom' => ['nullable', 'date'],
+            'preopExportTo' => ['nullable', 'date', 'after_or_equal:preopExportFrom'],
+        ]);
+
+        $from = $validated['preopExportFrom'] ? Carbon::parse($validated['preopExportFrom'])->startOfDay() : null;
+        $to = $validated['preopExportTo'] ? Carbon::parse($validated['preopExportTo'])->endOfDay() : null;
+
+        return Excel::download(
+            new PreOperationalChecklistExport($this->asset, $from, $to),
+            "preoperacionales-{$this->asset->code}.xlsx",
+        );
+    }
+
     public function render()
     {
         $workOrders = $this->asset->workOrders()
@@ -1711,6 +1783,11 @@ class Show extends Component
             'workOrders' => $workOrders,
             'correctivos' => $correctivos,
             'preventivos' => $workOrders->where('type', WorkOrderType::Preventivo),
+            'preOperationalChecklists' => $this->asset->preOperationalChecklists()
+                ->with('performedBy')
+                ->orderByDesc('inspected_at')
+                ->limit(10)
+                ->get(),
             'mtbfHours' => $this->mtbfHours($correctivos),
             'mttrHours' => $this->mttrHours($correctivos),
             'nextPreventiveDate' => $this->nextPreventiveDate(),
@@ -1778,7 +1855,7 @@ git commit -m "feat: add per-asset MTBF, MTTR and next-preventive-date data"
 - Modify: `resources/views/livewire/assets/show.blade.php`
 
 **Interfaces:**
-- Consumes: Task 1's `header` slot and CSS classes; Task 7's `mtbfHours`/`mttrHours`/`nextPreventiveDate`; the pre-existing `asset`/`workOrders`/`correctivos`/`preventivos`/`showHistory`/`exportFrom`/`exportTo`.
+- Consumes: Task 1's `header` slot and CSS classes; Task 7's `mtbfHours`/`mttrHours`/`nextPreventiveDate`; the pre-existing `asset`/`workOrders`/`correctivos`/`preventivos`/`showHistory`/`exportFrom`/`exportTo`/`preOperationalChecklists`/`preopExportFrom`/`preopExportTo`. The "Listas preoperacionales" card (from the concurrently-merged feature) is restyled here, not removed — it is real, shipped functionality, not part of the original design reference.
 - Produces: nothing consumed elsewhere.
 
 - [ ] **Step 1: Replace the view**
@@ -1815,6 +1892,10 @@ Replace `resources/views/livewire/assets/show.blade.php`:
             \App\Enums\AssetStatus::Operativo => 'tag-accent',
             \App\Enums\AssetStatus::Mantenimiento => 'tag-outline',
             \App\Enums\AssetStatus::FueraServicio => 'tag-neutral',
+        };
+        $preopResultTagClass = fn ($result) => match ($result) {
+            \App\Enums\PreOperationalResult::Apto => 'tag-neutral',
+            \App\Enums\PreOperationalResult::NoApto => 'tag-accent',
         };
     @endphp
 
@@ -1979,6 +2060,52 @@ Replace `resources/views/livewire/assets/show.blade.php`:
         </table>
     </div>
 
+    <div class="card elev-sm p-6">
+        <div class="flex flex-wrap items-end justify-between gap-4">
+            <div>
+                <h2 class="card-title m-0">Listas preoperacionales</h2>
+                <p class="text-xs text-neutral-400 mt-0.5">Inspecciones de seguridad registradas antes de iniciar turno.</p>
+            </div>
+
+            <form wire:submit="exportPreOperationalChecklists" class="flex flex-wrap items-end gap-3">
+                <div class="field">
+                    <label>Desde</label>
+                    <input wire:model="preopExportFrom" type="date" class="input">
+                </div>
+                <div class="field">
+                    <label>Hasta</label>
+                    <input wire:model="preopExportTo" type="date" class="input">
+                </div>
+                <button type="submit" class="btn btn-secondary">
+                    <i class="ph ph-download-simple"></i> Descargar Excel
+                </button>
+            </form>
+        </div>
+        <x-input-error :messages="$errors->get('preopExportTo')" class="mt-2" />
+
+        <table class="table mt-4">
+            <thead>
+                <tr>
+                    <th>Fecha</th><th>Resultado</th><th>Acción requerida</th><th>Responsable</th>
+                </tr>
+            </thead>
+            <tbody>
+                @forelse ($preOperationalChecklists as $checklist)
+                    <tr wire:key="preop-{{ $checklist->id }}" class="cursor-pointer" onclick="window.location='{{ route('pre-operational-checklists.show', $checklist) }}'">
+                        <td class="text-muted">{{ $checklist->inspected_at->format('d/m/Y H:i') }}</td>
+                        <td><span class="tag {{ $preopResultTagClass($checklist->result) }}">{{ $checklist->result->label() }}</span></td>
+                        <td class="text-muted">{{ $checklist->required_action->label() }}</td>
+                        <td class="text-muted">{{ $checklist->performedBy->name }}</td>
+                    </tr>
+                @empty
+                    <tr><td colspan="4" class="text-center text-muted py-8">No hay listas preoperacionales registradas.</td></tr>
+                @endforelse
+            </tbody>
+        </table>
+
+        <a href="{{ route('pre-operational-checklists.index', ['asset' => $asset->id]) }}" wire:navigate class="mt-3 inline-block text-xs text-accent-300">Ver todas las listas preoperacionales de este activo &rarr;</a>
+    </div>
+
     @if ($showHistory)
         <div class="fixed inset-0 z-50" wire:transition>
             <div class="fixed inset-0" style="background: color-mix(in srgb, var(--color-neutral-900) 60%, transparent);" wire:click="closeHistory"></div>
@@ -2020,11 +2147,12 @@ Replace `resources/views/livewire/assets/show.blade.php`:
 - [ ] **Step 2: Run the Asset Show tests**
 
 Run: `php artisan test --filter=AssetShowTest`
-Expected: PASS (unchanged by the view — confirms the view renders without error against both fixtures).
+Run: `php artisan test --filter=PreOperationalChecklistTest`
+Expected: both PASS. `PreOperationalChecklistTest` (pre-existing, from the concurrent merge) directly asserts on this same view — `Livewire::test(AssetsShow::class, ...)->assertSee('Listas preoperacionales')->assertSee($checklist->performedBy->name)` — so it is a real regression check that the restyled section still renders that heading text and the technician name.
 
 - [ ] **Step 3: Manual verification**
 
-Open a real `/activos/{code}` page. Confirm: header card shows photo/QR/details, the new 4-KPI row shows real MTBF/MTTR/próximo preventivo/criticidad (or `—` for an asset with no correctivos/planes), both history tables render with tags, the Excel export still downloads, and the history drawer still opens.
+Open a real `/activos/{code}` page. Confirm: header card shows photo/QR/details, the new 4-KPI row shows real MTBF/MTTR/próximo preventivo/criticidad (or `—` for an asset with no correctivos/planes), both maintenance history tables and the "Listas preoperacionales" table render with tags, both Excel exports (maintenance and pre-operational) still download, and the history drawer still opens.
 
 - [ ] **Step 4: Commit**
 
@@ -2044,7 +2172,7 @@ git commit -m "feat: redesign Detalle de activo in the Nocturne style"
 - [ ] **Step 1: Run the full automated test suite**
 
 Run: `php artisan test`
-Expected: PASS — every pre-existing test (`Auth/*`, `ExampleTest`, `ProfileTest`, `TeamTest`, `WorkOrderAssignmentTest`) plus the 4 new files from Tasks 2/5/7 (`DashboardTest`, `ProvidersIndexTest`, `AssetShowTest`) all green. Investigate and fix any failure before proceeding — do not skip or delete a failing test to get to green.
+Expected: every test PASSES except the one pre-existing, out-of-scope failure named in the Global Constraints' reconciliation note (`WorkOrderReportTest::test_downloading_the_report_returns_a_pdf`, blocked on a local `composer install`/SSL issue unrelated to this plan). That means: `Auth/*`, `ExampleTest`, `ProfileTest`, `TeamTest`, `WorkOrderAssignmentTest`, `WorkOrdersBoardTest`, `PreOperationalChecklistTest`, and the 3 new files from Tasks 2/5/7 (`DashboardTest`, `ProvidersIndexTest`, `AssetShowTest`) all green. Investigate and fix any OTHER failure before proceeding — do not skip or delete a failing test to get to green, and do not attempt to fix the dompdf dependency issue itself (out of scope).
 
 - [ ] **Step 2: Run Pint across the whole diff**
 
