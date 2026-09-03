@@ -25,47 +25,50 @@ new #[Layout('layouts.guest')] class extends Component
 }; ?>
 
 <div>
-    <!-- Session Status -->
-    <x-auth-session-status class="mb-4" :status="session('status')" />
+    <h1 class="text-xl text-ink m-0">Iniciar sesión</h1>
+    <p class="mt-1 text-sm text-neutral-400">Ingresa tus credenciales para continuar</p>
 
-    <form wire:submit="login">
+    <!-- Session Status -->
+    <x-auth-session-status class="mt-4" :status="session('status')" />
+
+    <form wire:submit="login" class="mt-6 flex flex-col gap-4">
         <!-- Email Address -->
-        <div>
-            <x-input-label for="email" :value="__('Email')" />
-            <x-text-input wire:model="form.email" id="email" class="block mt-1 w-full" type="email" name="email" required autofocus autocomplete="username" />
-            <x-input-error :messages="$errors->get('form.email')" class="mt-2" />
+        <div class="field">
+            <label for="email">Correo electrónico</label>
+            <input wire:model="form.email" id="email" type="email" name="email" required autofocus
+                autocomplete="username" class="input" placeholder="nombre@empresa.com">
+            <x-input-error :messages="$errors->get('form.email')" class="mt-1" />
         </div>
 
         <!-- Password -->
-        <div class="mt-4">
-            <x-input-label for="password" :value="__('Password')" />
-
-            <x-text-input wire:model="form.password" id="password" class="block mt-1 w-full"
-                            type="password"
-                            name="password"
-                            required autocomplete="current-password" />
-
-            <x-input-error :messages="$errors->get('form.password')" class="mt-2" />
+        <div class="field" x-data="{ show: false }">
+            <label for="password">Contraseña</label>
+            <div class="relative">
+                <input :type="show ? 'text' : 'password'" wire:model="form.password" id="password" name="password"
+                    required autocomplete="current-password" class="input pr-10" placeholder="••••••••">
+                <button type="button" @click="show = !show"
+                    class="absolute inset-y-0 right-0 flex items-center px-3 text-neutral-500 hover:text-neutral-300">
+                    <i class="ph" :class="show ? 'ph-eye-slash' : 'ph-eye'"></i>
+                </button>
+            </div>
+            <x-input-error :messages="$errors->get('form.password')" class="mt-1" />
         </div>
 
-        <!-- Remember Me -->
-        <div class="block mt-4">
-            <label for="remember" class="inline-flex items-center">
-                <input wire:model="form.remember" id="remember" type="checkbox" class="rounded dark:bg-gray-900 border-gray-300 dark:border-gray-700 text-indigo-600 shadow-sm focus:ring-indigo-500 dark:focus:ring-indigo-600 dark:focus:ring-offset-gray-800" name="remember">
-                <span class="ms-2 text-sm text-gray-600 dark:text-gray-400">{{ __('Remember me') }}</span>
+        <!-- Remember Me + Forgot Password -->
+        <div class="flex items-center justify-between">
+            <label for="remember" class="flex items-center gap-2 text-sm text-neutral-400">
+                <input wire:model="form.remember" id="remember" type="checkbox" name="remember"
+                    class="rounded border-neutral-700 bg-surface text-accent-500 focus:ring-accent-500">
+                Recordarme
             </label>
-        </div>
 
-        <div class="flex items-center justify-end mt-4">
             @if (Route::has('password.request'))
-                <a class="underline text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:focus:ring-offset-gray-800" href="{{ route('password.request') }}" wire:navigate>
-                    {{ __('Forgot your password?') }}
+                <a href="{{ route('password.request') }}" wire:navigate class="text-sm text-accent-300 hover:text-accent-200">
+                    ¿Olvidaste tu contraseña?
                 </a>
             @endif
-
-            <x-primary-button class="ms-3">
-                {{ __('Log in') }}
-            </x-primary-button>
         </div>
+
+        <button type="submit" class="btn btn-primary w-full justify-center">Ingresar</button>
     </form>
 </div>
