@@ -142,4 +142,12 @@ class HeaderSlotStructureTest extends TestCase
 
         $this->assertNestedInComponent($response->getContent(), 'wire:click', 'createPlant', 'Plantas "+ Nueva planta" button');
     }
+
+    public function test_pre_operational_checklists_index_asset_filter_is_inside_the_livewire_component_root(): void
+    {
+        $response = $this->actingAs($this->admin())->get('/preoperacionales');
+        $response->assertOk();
+
+        $this->assertNestedInComponent($response->getContent(), 'wire:model.live', 'assetFilter', 'Listas preoperacionales asset filter');
+    }
 }
