@@ -28,4 +28,13 @@ enum WorkOrderPriority: string
             self::Urgente => 'red',
         };
     }
+
+    public function tagVariant(): string
+    {
+        return match ($this) {
+            self::Urgente, self::Alta => 'accent',
+            self::Media => 'outline',
+            self::Baja => 'neutral',
+        };
+    }
 }

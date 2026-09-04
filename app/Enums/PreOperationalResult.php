@@ -22,4 +22,12 @@ enum PreOperationalResult: string
             self::NoApto => 'red',
         };
     }
+
+    public function tagVariant(): string
+    {
+        return match ($this) {
+            self::Apto => 'neutral',
+            self::NoApto => 'accent',
+        };
+    }
 }

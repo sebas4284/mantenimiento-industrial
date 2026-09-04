@@ -25,4 +25,13 @@ enum AssetStatus: string
             self::FueraServicio => 'red',
         };
     }
+
+    public function tagVariant(): string
+    {
+        return match ($this) {
+            self::Operativo => 'accent',
+            self::Mantenimiento => 'outline',
+            self::FueraServicio => 'neutral',
+        };
+    }
 }

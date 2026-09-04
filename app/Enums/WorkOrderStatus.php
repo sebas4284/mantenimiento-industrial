@@ -36,4 +36,13 @@ enum WorkOrderStatus: string
     {
         return ! in_array($this, [self::Completada, self::Cancelada], true);
     }
+
+    public function tagVariant(): string
+    {
+        return match ($this) {
+            self::Completada => 'neutral',
+            self::Cancelada => 'outline',
+            default => 'accent',
+        };
+    }
 }
