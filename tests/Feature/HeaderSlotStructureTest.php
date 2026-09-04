@@ -126,4 +126,12 @@ class HeaderSlotStructureTest extends TestCase
         $this->assertNestedInComponent($response->getContent(), 'wire:model.live.debounce.400ms', 'search', 'Inventario search input');
         $this->assertNestedInComponent($response->getContent(), 'wire:click', 'create', 'Inventario "Nuevo repuesto" button');
     }
+
+    public function test_assets_index_create_button_is_inside_the_livewire_component_root(): void
+    {
+        $response = $this->actingAs($this->admin())->get('/activos');
+        $response->assertOk();
+
+        $this->assertNestedInComponent($response->getContent(), 'wire:click', 'create', 'Activos "Nuevo activo" button');
+    }
 }
