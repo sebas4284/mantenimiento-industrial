@@ -101,4 +101,12 @@ class HeaderSlotStructureTest extends TestCase
 
         $this->assertNestedInComponent($response->getContent(), 'wire:click', 'create', 'Checklists "Nuevo checklist" button');
     }
+
+    public function test_team_index_search_is_inside_the_livewire_component_root(): void
+    {
+        $response = $this->actingAs($this->admin())->get('/equipo');
+        $response->assertOk();
+
+        $this->assertNestedInComponent($response->getContent(), 'wire:model.live.debounce.400ms', 'search', 'Equipo search input');
+    }
 }
