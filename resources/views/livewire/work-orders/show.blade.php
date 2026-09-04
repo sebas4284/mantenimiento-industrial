@@ -7,11 +7,6 @@
 
 <div class="space-y-4">
     @php
-        $priorityTagClass = fn ($priority) => match ($priority) {
-            \App\Enums\WorkOrderPriority::Urgente, \App\Enums\WorkOrderPriority::Alta => 'tag-accent',
-            \App\Enums\WorkOrderPriority::Media => 'tag-outline',
-            \App\Enums\WorkOrderPriority::Baja => 'tag-neutral',
-        };
         $executionTagClass = fn ($type) => $type === \App\Enums\WorkOrderExecutionType::Externo ? 'tag-outline' : 'tag-neutral';
     @endphp
 
@@ -30,7 +25,7 @@
             <div class="flex flex-col items-end gap-3">
                 <div class="flex flex-wrap justify-end gap-2">
                     <span class="tag tag-{{ $workOrder->status->tagVariant() }}">{{ $workOrder->status->label() }}</span>
-                    <span class="tag {{ $priorityTagClass($workOrder->priority) }}">{{ $workOrder->priority->label() }}</span>
+                    <span class="tag tag-{{ $workOrder->priority->tagVariant() }}">{{ $workOrder->priority->label() }}</span>
                     <span class="tag tag-neutral">{{ $workOrder->type->label() }}</span>
                     <span class="tag {{ $executionTagClass($workOrder->execution_type) }}">{{ $workOrder->execution_type->label() }}</span>
                 </div>
