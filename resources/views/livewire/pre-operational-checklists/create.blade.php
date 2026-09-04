@@ -22,8 +22,13 @@
 
                 <div>
                     <x-input-label for="inspected_at" value="Fecha y hora" />
-                    <x-text-input wire:model="inspected_at" id="inspected_at" type="datetime-local" class="mt-1 block w-full text-sm" />
-                    <x-input-error :messages="$errors->get('inspected_at')" class="mt-1" />
+                    @if (auth()->user()->role === \App\Enums\UserRole::Admin)
+                        <x-text-input wire:model="inspected_at" id="inspected_at" type="datetime-local" class="mt-1 block w-full text-sm" />
+                        <x-input-error :messages="$errors->get('inspected_at')" class="mt-1" />
+                    @else
+                        <x-text-input :value="now()->format('d/m/Y H:i')" disabled class="mt-1 block w-full text-sm bg-gray-100 dark:bg-gray-900 text-gray-500 dark:text-gray-400 cursor-not-allowed" />
+                        <p class="mt-1 text-xs text-gray-400">Se registra automáticamente al guardar.</p>
+                    @endif
                 </div>
             </div>
         </div>

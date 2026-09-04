@@ -37,8 +37,9 @@
                         @endif
                     </div>
 
+                    @php $assetDisplayStatus = $asset->computedStatus($asset->active_work_orders_count > 0); @endphp
                     <div class="flex flex-wrap gap-2">
-                        <x-badge :color="$asset->status->color()">{{ $asset->status->label() }}</x-badge>
+                        <x-badge :color="$assetDisplayStatus->color()">{{ $assetDisplayStatus->label() }}</x-badge>
                         <x-badge color="zinc">Criticidad {{ $asset->criticality->value }}</x-badge>
                     </div>
 

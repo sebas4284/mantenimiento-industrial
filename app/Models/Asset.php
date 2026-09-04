@@ -68,6 +68,20 @@ class Asset extends Model
     }
 
     /**
+     * The status actually shown to users: "Inactivo" is the only status set by
+     * hand, everything else is derived from whether the asset currently has a
+     * work order in progress.
+     */
+    public function computedStatus(bool $hasActiveWorkOrder): AssetStatus
+    {
+        if ($this->status === AssetStatus::Inactivo) {
+            return AssetStatus::Inactivo;
+        }
+
+        return $hasActiveWorkOrder ? AssetStatus::Mantenimiento : AssetStatus::Operativo;
+    }
+
+    /**
      * Generate (or regenerate) the QR code that links to this asset's quick-report page,
      * and store its path on the model without persisting.
      */

@@ -9,7 +9,16 @@
                 <p class="text-xs font-mono text-gray-400">{{ $preOperationalChecklist->asset->code }} · {{ $preOperationalChecklist->asset->area->plant->name }} — {{ $preOperationalChecklist->asset->area->name }}</p>
                 <h1 class="text-xl font-semibold text-gray-900 dark:text-gray-100">{{ $preOperationalChecklist->asset->name }}</h1>
             </div>
-            <x-badge :color="$preOperationalChecklist->result->color()">{{ $preOperationalChecklist->result->label() }}</x-badge>
+            <div class="flex items-center gap-3">
+                <x-badge :color="$preOperationalChecklist->result->color()">{{ $preOperationalChecklist->result->label() }}</x-badge>
+                @can('create', \App\Models\WorkOrder::class)
+                    <a href="{{ route('work-orders.quick-report', $preOperationalChecklist->asset) }}" wire:navigate
+                        class="inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-indigo-500">
+                        <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
+                        Crear orden de mantenimiento
+                    </a>
+                @endcan
+            </div>
         </div>
 
         <dl class="mt-6 grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
