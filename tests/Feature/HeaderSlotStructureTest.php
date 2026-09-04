@@ -109,4 +109,12 @@ class HeaderSlotStructureTest extends TestCase
 
         $this->assertNestedInComponent($response->getContent(), 'wire:model.live.debounce.400ms', 'search', 'Equipo search input');
     }
+
+    public function test_maintenance_plans_create_button_is_inside_the_livewire_component_root(): void
+    {
+        $response = $this->actingAs($this->admin())->get('/planes');
+        $response->assertOk();
+
+        $this->assertNestedInComponent($response->getContent(), 'wire:click', 'create', 'Planes "Nuevo plan" button');
+    }
 }
