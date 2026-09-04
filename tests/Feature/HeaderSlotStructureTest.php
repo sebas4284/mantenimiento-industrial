@@ -134,4 +134,12 @@ class HeaderSlotStructureTest extends TestCase
 
         $this->assertNestedInComponent($response->getContent(), 'wire:click', 'create', 'Activos "Nuevo activo" button');
     }
+
+    public function test_admin_plants_create_button_is_inside_the_livewire_component_root(): void
+    {
+        $response = $this->actingAs($this->admin())->get('/plantas');
+        $response->assertOk();
+
+        $this->assertNestedInComponent($response->getContent(), 'wire:click', 'createPlant', 'Plantas "+ Nueva planta" button');
+    }
 }
