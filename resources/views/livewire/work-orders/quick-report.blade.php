@@ -28,6 +28,7 @@
                             <option value="{{ $t->value }}">{{ $t->label() }}</option>
                         @endforeach
                     </select>
+                    <x-input-error :messages="$errors->get('type')" class="mt-1" />
                 </div>
 
                 <div class="field">
