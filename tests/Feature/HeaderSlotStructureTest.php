@@ -85,4 +85,12 @@ class HeaderSlotStructureTest extends TestCase
 
         $this->assertNestedInComponent($response->getContent(), 'wire:click', 'openHistory', 'Asset detail "Ver historial" button');
     }
+
+    public function test_admin_users_create_button_is_inside_the_livewire_component_root(): void
+    {
+        $response = $this->actingAs($this->admin())->get('/usuarios');
+        $response->assertOk();
+
+        $this->assertNestedInComponent($response->getContent(), 'wire:click', 'create', 'Usuarios "Nuevo usuario" button');
+    }
 }
