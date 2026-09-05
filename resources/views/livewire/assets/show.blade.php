@@ -7,25 +7,10 @@
 
 <div class="space-y-4">
     @php
-        $statusTagClass = fn ($status) => match ($status) {
-            \App\Enums\WorkOrderStatus::Completada => 'tag-neutral',
-            \App\Enums\WorkOrderStatus::Cancelada => 'tag-outline',
-            default => 'tag-accent',
-        };
-        $priorityTagClass = fn ($priority) => match ($priority) {
-            \App\Enums\WorkOrderPriority::Urgente, \App\Enums\WorkOrderPriority::Alta => 'tag-accent',
-            \App\Enums\WorkOrderPriority::Media => 'tag-outline',
-            \App\Enums\WorkOrderPriority::Baja => 'tag-neutral',
-        };
-        $assetStatusTagClass = fn ($status) => match ($status) {
-            \App\Enums\AssetStatus::Operativo => 'tag-accent',
-            \App\Enums\AssetStatus::Mantenimiento => 'tag-outline',
-            \App\Enums\AssetStatus::FueraServicio => 'tag-neutral',
-        };
-        $preopResultTagClass = fn ($result) => match ($result) {
-            \App\Enums\PreOperationalResult::Apto => 'tag-neutral',
-            \App\Enums\PreOperationalResult::NoApto => 'tag-accent',
-        };
+        $statusTagClass = fn ($status) => 'tag-'.$status->tagVariant();
+        $priorityTagClass = fn ($priority) => 'tag-'.$priority->tagVariant();
+        $assetStatusTagClass = fn ($status) => 'tag-'.$status->tagVariant();
+        $preopResultTagClass = fn ($result) => 'tag-'.$result->tagVariant();
     @endphp
 
     <div class="flex flex-wrap items-center justify-between gap-3">

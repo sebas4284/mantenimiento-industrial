@@ -7,11 +7,7 @@
 
 <div class="space-y-4">
     @php
-        $priorityTagClass = fn ($priority) => match ($priority) {
-            \App\Enums\WorkOrderPriority::Urgente, \App\Enums\WorkOrderPriority::Alta => 'tag-accent',
-            \App\Enums\WorkOrderPriority::Media => 'tag-outline',
-            \App\Enums\WorkOrderPriority::Baja => 'tag-neutral',
-        };
+        $priorityTagClass = fn ($priority) => 'tag-'.$priority->tagVariant();
     @endphp
 
     <div class="flex flex-wrap items-center justify-between gap-3">
