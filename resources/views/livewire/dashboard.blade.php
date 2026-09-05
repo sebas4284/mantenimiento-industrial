@@ -25,11 +25,7 @@
     </div>
 
     @php
-        $priorityTagClass = fn ($priority) => match ($priority) {
-            \App\Enums\WorkOrderPriority::Urgente, \App\Enums\WorkOrderPriority::Alta => 'tag-accent',
-            \App\Enums\WorkOrderPriority::Media => 'tag-outline',
-            \App\Enums\WorkOrderPriority::Baja => 'tag-neutral',
-        };
+        $priorityTagClass = fn ($priority) => 'tag-'.$priority->tagVariant();
         $kpis = [
             ['icon' => 'ph-gauge', 'label' => 'MTBF', 'value' => $mtbfHours, 'unit' => 'h', 'sub' => 'Tiempo medio entre fallas', 'delta' => $mtbfDelta, 'invert' => false],
             ['icon' => 'ph-wrench', 'label' => 'MTTR', 'value' => $mttrHours, 'unit' => 'h', 'sub' => 'Tiempo medio de reparación', 'delta' => $mttrDelta, 'invert' => true],
