@@ -5,6 +5,7 @@ namespace App\Livewire\PreOperationalChecklists;
 use App\Enums\PreOperationalAnswer;
 use App\Enums\PreOperationalRequiredAction;
 use App\Enums\PreOperationalResult;
+use App\Enums\UserRole;
 use App\Models\Asset;
 use App\Models\PreOperationalChecklist;
 use App\Models\PreOperationalChecklistAnswer;
@@ -47,22 +48,32 @@ class Create extends Component
     {
         $this->authorize('create', PreOperationalChecklist::class);
 
-        $validated = $this->validate([
+        $isAdmin = auth()->user()->role === UserRole::Admin;
+
+        $rules = [
             'asset_id' => ['required', 'exists:assets,id'],
-            'inspected_at' => ['required', 'date'],
             'result' => ['required', new Enum(PreOperationalResult::class)],
             'anomaly_notes' => ['nullable', 'string', 'max:2000'],
             'required_action' => ['required', new Enum(PreOperationalRequiredAction::class)],
             'additional_notes' => ['nullable', 'string', 'max:2000'],
             'answers' => ['required', 'array'],
             'answers.*' => ['required', new Enum(PreOperationalAnswer::class)],
-        ]);
+        ];
 
-        DB::transaction(function () use ($validated) {
+        // Only Admin may back- or post-date a submission; everyone else always gets the server's current time.
+        if ($isAdmin) {
+            $rules['inspected_at'] = ['required', 'date'];
+        }
+
+        $validated = $this->validate($rules);
+
+        $inspectedAt = $isAdmin ? $validated['inspected_at'] : now();
+
+        DB::transaction(function () use ($validated, $inspectedAt) {
             $checklist = PreOperationalChecklist::create([
                 'asset_id' => $validated['asset_id'],
                 'performed_by' => auth()->id(),
-                'inspected_at' => $validated['inspected_at'],
+                'inspected_at' => $inspectedAt,
                 'result' => $validated['result'],
                 'anomaly_notes' => $validated['anomaly_notes'],
                 'required_action' => $validated['required_action'],

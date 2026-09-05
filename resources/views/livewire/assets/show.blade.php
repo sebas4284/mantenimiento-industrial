@@ -16,9 +16,16 @@
     <div class="flex flex-wrap items-center justify-between gap-3">
         <a href="{{ route('assets.index') }}" wire:navigate class="text-sm text-accent-300">&larr; Volver a activos</a>
 
-        <button wire:click="openHistory" class="btn btn-secondary">
-            <i class="ph ph-clock-counter-clockwise"></i> Ver historial
-        </button>
+        <div class="flex gap-3">
+            @can('update', $asset)
+                <button wire:click="openEditModal" class="btn btn-secondary">
+                    <i class="ph ph-pencil-simple"></i> Editar
+                </button>
+            @endcan
+            <button wire:click="openHistory" class="btn btn-secondary">
+                <i class="ph ph-clock-counter-clockwise"></i> Ver historial
+            </button>
+        </div>
     </div>
 
     <div class="card elev-sm p-6">
@@ -38,7 +45,7 @@
                 <h2 class="m-0 text-xl text-ink">{{ $asset->name }}</h2>
 
                 <div class="mt-3 flex flex-wrap gap-2">
-                    <span class="tag {{ $assetStatusTagClass($asset->status) }}">{{ $asset->status->label() }}</span>
+                    <span class="tag {{ $assetStatusTagClass($displayStatus) }}">{{ $displayStatus->label() }}</span>
                     <span class="tag tag-neutral">Criticidad {{ $asset->criticality->value }}</span>
                 </div>
 
@@ -84,22 +91,26 @@
         </div>
     </div>
 
-    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div class="card elev-sm p-4">
+    <div class="grid grid-cols-2 lg:grid-cols-5 gap-4">
+        <div class="card elev-sm p-4 text-center">
             <p class="text-xs text-neutral-400 m-0">MTBF</p>
             <p class="mt-1 font-medium text-xl text-ink">{{ $mtbfHours !== null ? "{$mtbfHours} h" : '—' }}</p>
         </div>
-        <div class="card elev-sm p-4">
+        <div class="card elev-sm p-4 text-center">
             <p class="text-xs text-neutral-400 m-0">MTTR</p>
             <p class="mt-1 font-medium text-xl text-ink">{{ $mttrHours !== null ? "{$mttrHours} h" : '—' }}</p>
         </div>
-        <div class="card elev-sm p-4">
-            <p class="text-xs text-neutral-400 m-0">Próximo preventivo</p>
-            <p class="mt-1 font-medium text-xl text-ink">{{ $nextPreventiveDate?->translatedFormat('d M') ?? '—' }}</p>
+        <div class="card elev-sm p-4 text-center">
+            <p class="text-xs text-neutral-400 m-0">Disponibilidad</p>
+            <p class="mt-1 font-medium text-xl text-ink">{{ $availabilityPercent !== null ? "{$availabilityPercent}%" : '—' }}</p>
         </div>
-        <div class="card elev-sm p-4">
-            <p class="text-xs text-neutral-400 m-0">Criticidad</p>
-            <p class="mt-1 font-medium text-xl text-ink">{{ $asset->criticality->label() }}</p>
+        <div class="card elev-sm p-4 text-center">
+            <p class="text-xs text-neutral-400 m-0">% Correctivo</p>
+            <p class="mt-1 font-medium text-xl text-ink">{{ $correctivoPercent !== null ? "{$correctivoPercent}%" : '—' }}</p>
+        </div>
+        <div class="card elev-sm p-4 text-center">
+            <p class="text-xs text-neutral-400 m-0">% Preventivo</p>
+            <p class="mt-1 font-medium text-xl text-ink">{{ $preventivoPercent !== null ? "{$preventivoPercent}%" : '—' }}</p>
         </div>
     </div>
 
@@ -264,6 +275,86 @@
                         <p class="text-sm text-neutral-400">Este activo no tiene mantenimientos registrados todavía.</p>
                     @endforelse
                 </div>
+            </div>
+        </div>
+    @endif
+
+    @if ($showEditModal)
+        <div class="fixed inset-0 z-50 overflow-y-auto dialog-backdrop grid place-items-center p-4" wire:transition>
+            <div class="fixed inset-0" wire:click="closeEditModal"></div>
+
+            <div class="dialog relative">
+                <h2 class="dialog-title">Editar activo</h2>
+
+                <form wire:submit="saveEdit" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div class="field sm:col-span-2">
+                        <label>Área</label>
+                        <select wire:model="edit_area_id" class="input">
+                            <option value="">Selecciona un área</option>
+                            @foreach ($areas as $area)
+                                <option value="{{ $area->id }}">{{ $area->plant->name }} — {{ $area->name }}</option>
+                            @endforeach
+                        </select>
+                        <x-input-error :messages="$errors->get('edit_area_id')" class="mt-1" />
+                    </div>
+
+                    <div class="field">
+                        <label>Código</label>
+                        <input wire:model="edit_code" class="input">
+                        <x-input-error :messages="$errors->get('edit_code')" class="mt-1" />
+                    </div>
+
+                    <div class="field">
+                        <label>Nombre</label>
+                        <input wire:model="edit_name" class="input">
+                        <x-input-error :messages="$errors->get('edit_name')" class="mt-1" />
+                    </div>
+
+                    <div class="field">
+                        <label>Fabricante</label>
+                        <input wire:model="edit_manufacturer" class="input">
+                    </div>
+
+                    <div class="field">
+                        <label>Modelo</label>
+                        <input wire:model="edit_model" class="input">
+                    </div>
+
+                    <div class="field">
+                        <label>Número de serie</label>
+                        <input wire:model="edit_serial_number" class="input">
+                    </div>
+
+                    <div class="field">
+                        <label>Criticidad</label>
+                        <select wire:model="edit_criticality" class="input">
+                            @foreach ($criticalities as $c)
+                                <option value="{{ $c->value }}">{{ $c->label() }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <div class="field">
+                        <label>Estado</label>
+                        <select wire:model="edit_status" class="input">
+                            @foreach ($editStatuses as $s)
+                                <option value="{{ $s->value }}">{{ $s->label() }}</option>
+                            @endforeach
+                        </select>
+                        <p class="text-xs text-neutral-500 mt-1">"En mantenimiento" se calcula solo mientras el activo tenga una orden en progreso.</p>
+                    </div>
+
+                    <div class="field sm:col-span-2">
+                        <label>Foto (opcional)</label>
+                        <input type="file" wire:model="edit_photo" class="input">
+                        <x-input-error :messages="$errors->get('edit_photo')" class="mt-1" />
+                    </div>
+
+                    <div class="dialog-actions sm:col-span-2">
+                        <button type="button" wire:click="closeEditModal" class="btn btn-secondary">Cancelar</button>
+                        <button type="submit" class="btn btn-primary">Guardar</button>
+                    </div>
+                </form>
             </div>
         </div>
     @endif

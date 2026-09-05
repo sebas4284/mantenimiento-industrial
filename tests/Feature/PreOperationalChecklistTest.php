@@ -7,6 +7,7 @@ use App\Enums\UserRole;
 use App\Livewire\Assets\Show as AssetsShow;
 use App\Livewire\PreOperationalChecklists\Create;
 use App\Livewire\PreOperationalChecklists\Index;
+use App\Livewire\PreOperationalChecklists\Show as PreOperationalChecklistShow;
 use App\Models\Area;
 use App\Models\Asset;
 use App\Models\Plant;
@@ -85,6 +86,71 @@ class PreOperationalChecklistTest extends TestCase
         $component->call('save')->assertHasNoErrors();
 
         $this->assertSame(PreOperationalResult::Apto, PreOperationalChecklist::first()->result);
+    }
+
+    public function test_a_non_admin_cannot_backdate_the_inspection_date(): void
+    {
+        $this->seed(PreOperationalItemSeeder::class);
+
+        $operator = User::factory()->role(UserRole::Operador)->create();
+        $asset = Asset::factory()->create();
+        $itemIds = PreOperationalItem::pluck('id');
+
+        $this->actingAs($operator);
+
+        $component = Livewire::test(Create::class)
+            ->set('asset_id', $asset->id)
+            ->set('inspected_at', now()->subDays(10)->format('Y-m-d\TH:i'))
+            ->set('result', PreOperationalResult::Apto->value)
+            ->set('required_action', 'ninguna');
+
+        foreach ($itemIds as $itemId) {
+            $component->set("answers.{$itemId}", 'buena');
+        }
+
+        $component->call('save')->assertHasNoErrors();
+
+        $checklist = PreOperationalChecklist::withoutGlobalScopes()->first();
+        $this->assertLessThan(2, $checklist->inspected_at->diffInMinutes(now()));
+    }
+
+    public function test_an_admin_can_backdate_the_inspection_date(): void
+    {
+        $this->seed(PreOperationalItemSeeder::class);
+
+        $admin = User::factory()->role(UserRole::Admin)->create();
+        $asset = Asset::factory()->create();
+        $itemIds = PreOperationalItem::pluck('id');
+        $backdated = now()->subDays(10)->startOfMinute();
+
+        $this->actingAs($admin);
+
+        $component = Livewire::test(Create::class)
+            ->set('asset_id', $asset->id)
+            ->set('inspected_at', $backdated->format('Y-m-d\TH:i'))
+            ->set('result', PreOperationalResult::Apto->value)
+            ->set('required_action', 'ninguna');
+
+        foreach ($itemIds as $itemId) {
+            $component->set("answers.{$itemId}", 'buena');
+        }
+
+        $component->call('save')->assertHasNoErrors();
+
+        $checklist = PreOperationalChecklist::first();
+        $this->assertTrue($checklist->inspected_at->equalTo($backdated));
+    }
+
+    public function test_show_page_has_a_button_to_create_a_work_order_for_the_asset(): void
+    {
+        $admin = User::factory()->role(UserRole::Admin)->create();
+        $checklist = PreOperationalChecklist::factory()->create();
+
+        $this->actingAs($admin);
+
+        Livewire::test(PreOperationalChecklistShow::class, ['preOperationalChecklist' => $checklist])
+            ->assertSee('Crear orden de mantenimiento')
+            ->assertSeeHtml(route('work-orders.quick-report', $checklist->asset));
     }
 
     public function test_excel_export_downloads_from_the_index(): void

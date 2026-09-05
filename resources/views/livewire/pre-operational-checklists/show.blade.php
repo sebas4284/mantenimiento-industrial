@@ -19,7 +19,14 @@
     <div class="card elev-sm p-6">
         <div class="flex flex-wrap items-start justify-between gap-4">
             <p class="text-xs font-mono text-neutral-500 m-0">{{ $preOperationalChecklist->asset->code }} · {{ $preOperationalChecklist->asset->area->plant->name }} — {{ $preOperationalChecklist->asset->area->name }}</p>
-            <span class="tag tag-{{ $preOperationalChecklist->result->tagVariant() }}">{{ $preOperationalChecklist->result->label() }}</span>
+            <div class="flex items-center gap-3">
+                <span class="tag tag-{{ $preOperationalChecklist->result->tagVariant() }}">{{ $preOperationalChecklist->result->label() }}</span>
+                @can('create', \App\Models\WorkOrder::class)
+                    <a href="{{ route('work-orders.quick-report', $preOperationalChecklist->asset) }}" wire:navigate class="btn btn-primary text-xs">
+                        <i class="ph ph-plus"></i> Crear orden de mantenimiento
+                    </a>
+                @endcan
+            </div>
         </div>
 
         <dl class="mt-6 grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">

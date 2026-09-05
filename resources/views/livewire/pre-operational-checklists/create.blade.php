@@ -26,8 +26,13 @@
 
                 <div class="field">
                     <label>Fecha y hora</label>
-                    <input wire:model="inspected_at" type="datetime-local" class="input">
-                    <x-input-error :messages="$errors->get('inspected_at')" class="mt-1" />
+                    @if (auth()->user()->role === \App\Enums\UserRole::Admin)
+                        <input wire:model="inspected_at" type="datetime-local" class="input">
+                        <x-input-error :messages="$errors->get('inspected_at')" class="mt-1" />
+                    @else
+                        <input value="{{ now()->format('d/m/Y H:i') }}" disabled class="input opacity-60 cursor-not-allowed">
+                        <p class="mt-1 text-xs text-neutral-500">Se registra automáticamente al guardar.</p>
+                    @endif
                 </div>
             </div>
         </div>

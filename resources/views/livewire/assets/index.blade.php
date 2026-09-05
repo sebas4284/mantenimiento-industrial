@@ -27,6 +27,7 @@
 
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         @forelse ($assets as $asset)
+            @php $assetDisplayStatus = $asset->computedStatus($asset->active_work_orders_count > 0); @endphp
             <div wire:key="asset-{{ $asset->id }}" class="card elev-sm p-5 gap-3">
                 <div class="flex items-start justify-between">
                     <div>
@@ -42,7 +43,7 @@
                 </div>
 
                 <div class="flex flex-wrap gap-2">
-                    <span class="tag tag-{{ $asset->status->tagVariant() }}">{{ $asset->status->label() }}</span>
+                    <span class="tag tag-{{ $assetDisplayStatus->tagVariant() }}">{{ $assetDisplayStatus->label() }}</span>
                     <span class="tag tag-neutral">Criticidad {{ $asset->criticality->value }}</span>
                 </div>
 

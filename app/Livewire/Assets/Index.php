@@ -4,6 +4,7 @@ namespace App\Livewire\Assets;
 
 use App\Enums\AssetCriticality;
 use App\Enums\AssetStatus;
+use App\Enums\WorkOrderStatus;
 use App\Models\Area;
 use App\Models\Asset;
 use Illuminate\Validation\Rules\Enum;
@@ -129,6 +130,7 @@ class Index extends Component
     {
         $assets = Asset::query()
             ->with('area.plant')
+            ->withCount(['workOrders as active_work_orders_count' => fn ($q) => $q->where('status', WorkOrderStatus::EnProgreso)])
             ->when($this->search, fn ($q) => $q->where(fn ($q) => $q
                 ->where('code', 'like', "%{$this->search}%")
                 ->orWhere('name', 'like', "%{$this->search}%")))
@@ -140,7 +142,7 @@ class Index extends Component
             'assets' => $assets,
             'areas' => Area::with('plant')->orderBy('name')->get(),
             'criticalities' => AssetCriticality::cases(),
-            'statuses' => AssetStatus::cases(),
+            'statuses' => [AssetStatus::Operativo, AssetStatus::Inactivo],
         ]);
     }
 }

@@ -6,14 +6,14 @@ enum AssetStatus: string
 {
     case Operativo = 'operativo';
     case Mantenimiento = 'mantenimiento';
-    case FueraServicio = 'fuera_servicio';
+    case Inactivo = 'inactivo';
 
     public function label(): string
     {
         return match ($this) {
             self::Operativo => 'Operativo',
             self::Mantenimiento => 'En mantenimiento',
-            self::FueraServicio => 'Fuera de servicio',
+            self::Inactivo => 'Inactivo',
         };
     }
 
@@ -22,7 +22,7 @@ enum AssetStatus: string
         return match ($this) {
             self::Operativo => 'green',
             self::Mantenimiento => 'amber',
-            self::FueraServicio => 'red',
+            self::Inactivo => 'zinc',
         };
     }
 
@@ -31,7 +31,7 @@ enum AssetStatus: string
         return match ($this) {
             self::Operativo => 'accent',
             self::Mantenimiento => 'outline',
-            self::FueraServicio => 'neutral',
+            self::Inactivo => 'neutral',
         };
     }
 }
