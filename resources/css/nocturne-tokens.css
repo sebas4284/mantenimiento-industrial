@@ -1,36 +1,76 @@
 /* Nocturne design tokens — plain CSS custom properties consumed by the
-   component classes in app.css. */
+   component classes in app.css and by tailwind.config.js's color utilities.
+
+   Every color token has a hex variable (for color-mix() usage in app.css)
+   and a "-rgb" triple companion (for Tailwind's rgb(var(--x) / <alpha-value>)
+   opacity-modifier pattern in tailwind.config.js). Dark is the default/
+   fallback (:root, unconditional); html[data-theme="light"] overrides both
+   forms of every token below for the light variant.
+
+   The neutral/accent numeric ramps intentionally invert direction between
+   themes (dark: 100=lightest…900=darkest; light: 100=darkest…900=lightest)
+   because Blade markup hardcodes specific steps (e.g. .tag-neutral is
+   always neutral-800 background / neutral-100 text) that never change
+   between themes — inverting the ramp is what keeps those fixed pairings
+   legible in both themes. */
 :root {
   --color-bg: #161826;
+  --color-bg-rgb: 22 24 38;
   --color-surface: #232532;
+  --color-surface-rgb: 35 37 50;
   --color-text: #e9e9ed;
+  --color-text-rgb: 233 233 237;
   --color-accent: #9184d9;
+  --color-accent-rgb: 145 132 217;
   --color-accent-2: #a7a1db;
-  --color-divider: color-mix(in srgb, #e9e9ed 16%, transparent);
+  --color-accent-2-rgb: 167 161 219;
+  --color-divider: color-mix(in srgb, var(--color-text) 16%, transparent);
+  --color-scrim: rgba(0, 0, 0, 0.6);
 
   --color-neutral-100: #f3f5fe;
+  --color-neutral-100-rgb: 243 245 254;
   --color-neutral-200: #e4e7f5;
+  --color-neutral-200-rgb: 228 231 245;
   --color-neutral-300: #cfd3e5;
+  --color-neutral-300-rgb: 207 211 229;
   --color-neutral-400: #b2b6ca;
+  --color-neutral-400-rgb: 178 182 202;
   --color-neutral-500: #9397ab;
+  --color-neutral-500-rgb: 147 151 171;
   --color-neutral-600: #75798c;
+  --color-neutral-600-rgb: 117 121 140;
   --color-neutral-700: #595d6c;
+  --color-neutral-700-rgb: 89 93 108;
   --color-neutral-800: #3f424d;
+  --color-neutral-800-rgb: 63 66 77;
   --color-neutral-900: #292b31;
+  --color-neutral-900-rgb: 41 43 49;
 
   --color-accent-100: #f5f4ff;
+  --color-accent-100-rgb: 245 244 255;
   --color-accent-200: #e7e5fe;
+  --color-accent-200-rgb: 231 229 254;
   --color-accent-300: #d2cefd;
+  --color-accent-300-rgb: 210 206 253;
   --color-accent-400: #b5abfc;
+  --color-accent-400-rgb: 181 171 252;
   --color-accent-500: #968ae0;
+  --color-accent-500-rgb: 150 138 224;
   --color-accent-600: #796cbf;
+  --color-accent-600-rgb: 121 108 191;
   --color-accent-700: #5d5294;
+  --color-accent-700-rgb: 93 82 148;
   --color-accent-800: #423a6a;
+  --color-accent-800-rgb: 66 58 106;
   --color-accent-900: #2b2741;
+  --color-accent-900-rgb: 43 39 65;
 
   --color-section: #262a60;
+  --color-section-rgb: 38 42 96;
   --color-section-glow: #353b80;
+  --color-section-glow-rgb: 53 59 128;
   --color-section-ghost: #4c5397;
+  --color-section-ghost-rgb: 76 83 151;
 
   --font-heading: "Inter", system-ui, sans-serif;
   --font-heading-weight: 500;
@@ -50,4 +90,67 @@
   --shadow-sm: 0 0 0 1px #3f424d;
   --shadow-md: 0 0 0 1px #595d6c, 0 6px 18px rgba(0,0,0,0.55);
   --shadow-lg: 0 0 0 1px #9397ab, 0 16px 40px rgba(0,0,0,0.65);
+}
+
+html[data-theme="light"] {
+  --color-bg: #f5f4fb;
+  --color-bg-rgb: 245 244 251;
+  --color-surface: #ffffff;
+  --color-surface-rgb: 255 255 255;
+  --color-text: #23222e;
+  --color-text-rgb: 35 34 46;
+  --color-accent: #6a5cd8;
+  --color-accent-rgb: 106 92 216;
+  --color-accent-2: #5b4ec2;
+  --color-accent-2-rgb: 91 78 194;
+  --color-scrim: rgba(0, 0, 0, 0.45);
+
+  --color-neutral-100: #23222e;
+  --color-neutral-100-rgb: 35 34 46;
+  --color-neutral-200: #383a46;
+  --color-neutral-200-rgb: 56 58 70;
+  --color-neutral-300: #4d505f;
+  --color-neutral-300-rgb: 77 80 95;
+  --color-neutral-400: #656878;
+  --color-neutral-400-rgb: 101 104 120;
+  --color-neutral-500: #7d8092;
+  --color-neutral-500-rgb: 125 128 146;
+  --color-neutral-600: #9c9fb0;
+  --color-neutral-600-rgb: 156 159 176;
+  --color-neutral-700: #c1c3d2;
+  --color-neutral-700-rgb: 193 195 210;
+  --color-neutral-800: #dcdee8;
+  --color-neutral-800-rgb: 220 222 232;
+  --color-neutral-900: #f1f1f8;
+  --color-neutral-900-rgb: 241 241 248;
+
+  --color-accent-100: #2b2741;
+  --color-accent-100-rgb: 43 39 65;
+  --color-accent-200: #423a6a;
+  --color-accent-200-rgb: 66 58 106;
+  --color-accent-300: #5d5294;
+  --color-accent-300-rgb: 93 82 148;
+  --color-accent-400: #796cbf;
+  --color-accent-400-rgb: 121 108 191;
+  --color-accent-500: #968ae0;
+  --color-accent-500-rgb: 150 138 224;
+  --color-accent-600: #b5abfc;
+  --color-accent-600-rgb: 181 171 252;
+  --color-accent-700: #d2cefd;
+  --color-accent-700-rgb: 210 206 253;
+  --color-accent-800: #e7e5fe;
+  --color-accent-800-rgb: 231 229 254;
+  --color-accent-900: #f5f4ff;
+  --color-accent-900-rgb: 245 244 255;
+
+  --color-section: #eceafb;
+  --color-section-rgb: 236 234 251;
+  --color-section-glow: #e2defa;
+  --color-section-glow-rgb: 226 222 250;
+  --color-section-ghost: #cfc8f2;
+  --color-section-ghost-rgb: 207 200 242;
+
+  --shadow-sm: 0 0 0 1px #e2e3ee;
+  --shadow-md: 0 0 0 1px #d7d8e6, 0 6px 18px rgba(35,34,46,0.10);
+  --shadow-lg: 0 0 0 1px #c7c9dc, 0 16px 40px rgba(35,34,46,0.14);
 }

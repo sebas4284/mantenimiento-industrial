@@ -89,8 +89,23 @@ $navItemClass = fn (string $pattern) => request()->routeIs($pattern)
         @endif
     </div>
 
-    <div class="mt-auto px-3 shrink-0">
-        <x-dropdown align="right" width="48">
+    <div class="mt-auto flex flex-col gap-1 px-3 shrink-0">
+        <button type="button"
+            x-data="{ theme: localStorage.getItem('theme') || 'dark' }"
+            x-init="$watch('theme', v => {
+                v === 'light' ? document.documentElement.setAttribute('data-theme', 'light') : document.documentElement.removeAttribute('data-theme');
+                localStorage.setItem('theme', v);
+                window.dispatchEvent(new CustomEvent('theme-changed', { detail: { theme: v } }));
+            })"
+            @click="theme = (theme === 'dark' ? 'light' : 'dark')"
+            class="h-10 rounded-md flex items-center gap-3 px-2.5 shrink-0 text-neutral-500 hover:text-neutral-300 hover:bg-neutral-800"
+            :class="expanded ? '' : 'justify-center'"
+            :title="theme === 'dark' ? 'Modo normal' : 'Modo noche'">
+            <i class="ph text-[19px] shrink-0" :class="theme === 'dark' ? 'ph-sun' : 'ph-moon'"></i>
+            <span x-show="expanded" class="text-sm whitespace-nowrap" x-text="theme === 'dark' ? 'Modo normal' : 'Modo noche'"></span>
+        </button>
+
+        <x-dropdown align="right" width="48" contentClasses="py-1 bg-surface border border-neutral-800">
             <x-slot name="trigger">
                 <button class="w-full flex items-center gap-3 rounded-md hover:bg-neutral-800 p-1" :class="expanded ? '' : 'justify-center'">
                     <span class="w-8 h-8 shrink-0 rounded-full bg-neutral-700 flex items-center justify-center text-[11px] text-ink" title="{{ auth()->user()->name }}">

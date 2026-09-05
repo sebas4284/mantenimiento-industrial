@@ -147,6 +147,10 @@
 
 @script
 <script>
+    window.isLightTheme = window.isLightTheme || function () {
+        return document.documentElement.dataset.theme === 'light';
+    };
+
     Alpine.data('paretoChart', (data) => ({
         chart: null,
         data,
@@ -156,17 +160,24 @@
             this.$watch('data', () => {
                 this.chart.updateOptions(this.options());
             });
+            this.onThemeChanged = () => this.chart.updateOptions(this.options());
+            window.addEventListener('theme-changed', this.onThemeChanged);
+        },
+        destroy() {
+            window.removeEventListener('theme-changed', this.onThemeChanged);
         },
         options() {
+            const light = window.isLightTheme();
+
             return {
                 chart: { type: 'bar', height: 280, toolbar: { show: false }, background: 'transparent' },
                 series: [{ name: 'Fallas', data: this.data.values }],
-                xaxis: { categories: this.data.labels, labels: { style: { colors: '#9397ab' } } },
-                yaxis: { labels: { style: { colors: '#9397ab' } } },
-                colors: ['#968ae0'],
+                xaxis: { categories: this.data.labels, labels: { style: { colors: light ? '#5b5e6e' : '#9397ab' } } },
+                yaxis: { labels: { style: { colors: light ? '#5b5e6e' : '#9397ab' } } },
+                colors: [light ? '#6a5cd8' : '#968ae0'],
                 plotOptions: { bar: { borderRadius: 6 } },
-                grid: { borderColor: '#3f424d' },
-                theme: { mode: 'dark' },
+                grid: { borderColor: light ? '#e2e3ee' : '#3f424d' },
+                theme: { mode: light ? 'light' : 'dark' },
             };
         },
     }));
@@ -180,21 +191,28 @@
             this.$watch('data', () => {
                 this.chart.updateOptions(this.options());
             });
+            this.onThemeChanged = () => this.chart.updateOptions(this.options());
+            window.addEventListener('theme-changed', this.onThemeChanged);
+        },
+        destroy() {
+            window.removeEventListener('theme-changed', this.onThemeChanged);
         },
         options() {
+            const light = window.isLightTheme();
+
             return {
                 chart: { type: 'line', height: 280, toolbar: { show: false }, background: 'transparent' },
                 series: [
                     { name: 'Correctivo', data: this.data.correctivo },
                     { name: 'Preventivo', data: this.data.preventivo },
                 ],
-                xaxis: { categories: this.data.labels, labels: { style: { colors: '#9397ab' } } },
-                yaxis: { labels: { style: { colors: '#9397ab' } } },
-                colors: ['#b5abfc', '#75798c'],
+                xaxis: { categories: this.data.labels, labels: { style: { colors: light ? '#5b5e6e' : '#9397ab' } } },
+                yaxis: { labels: { style: { colors: light ? '#5b5e6e' : '#9397ab' } } },
+                colors: light ? ['#5d5294', '#b7b9c9'] : ['#b5abfc', '#75798c'],
                 stroke: { curve: 'smooth', width: [2.5, 2], dashArray: [0, 5] },
                 fill: { type: ['gradient', 'solid'], gradient: { opacityFrom: 0.35, opacityTo: 0 } },
-                grid: { borderColor: '#3f424d' },
-                theme: { mode: 'dark' },
+                grid: { borderColor: light ? '#e2e3ee' : '#3f424d' },
+                theme: { mode: light ? 'light' : 'dark' },
             };
         },
     }));
