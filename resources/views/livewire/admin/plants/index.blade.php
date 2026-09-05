@@ -5,7 +5,8 @@
     </div>
 </x-slot>
 
-<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+<div>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
     <div>
         <div class="flex justify-end mb-3">
             <button wire:click="createPlant" class="btn-ghost text-sm">+ Nueva planta</button>
@@ -60,9 +61,9 @@
             </div>
         @endif
     </div>
-</div>
+    </div>
 
-@if ($showPlantModal)
+    @if ($showPlantModal)
     <div class="fixed inset-0 z-50 overflow-y-auto dialog-backdrop grid place-items-center p-4" wire:transition>
         <div class="fixed inset-0" wire:click="$set('showPlantModal', false)"></div>
         <div class="dialog relative">
@@ -104,4 +105,5 @@
             </form>
         </div>
     </div>
-@endif
+    @endif
+</div>

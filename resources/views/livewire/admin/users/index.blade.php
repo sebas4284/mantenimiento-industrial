@@ -43,9 +43,8 @@
     </div>
 
     <div class="mt-4">{{ $users->links() }}</div>
-</div>
 
-@if ($showModal)
+    @if ($showModal)
     <div class="fixed inset-0 z-50 overflow-y-auto dialog-backdrop grid place-items-center p-4" wire:transition>
         <div class="fixed inset-0" wire:click="closeModal"></div>
 
@@ -102,4 +101,5 @@
             </form>
         </div>
     </div>
-@endif
+    @endif
+</div>

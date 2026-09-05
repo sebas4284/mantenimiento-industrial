@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Enums\UserRole;
+use App\Livewire\ChecklistTemplates\Index;
 use App\Models\Area;
 use App\Models\Asset;
 use App\Models\Plant;
@@ -10,6 +11,7 @@ use App\Models\User;
 use DOMDocument;
 use DOMXPath;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Livewire\Livewire;
 use Tests\TestCase;
 
 /**
@@ -149,5 +151,90 @@ class HeaderSlotStructureTest extends TestCase
         $response->assertOk();
 
         $this->assertNestedInComponent($response->getContent(), 'wire:model.live', 'assetFilter', 'Listas preoperacionales asset filter');
+    }
+
+    /**
+     * Regression check for a real bug found in the final whole-branch review: six screens
+     * closed their Livewire component's root <div> BEFORE their @if ($showModal) block,
+     * giving the rendered page two root elements. Livewire's morph2() only keeps the first
+     * root, so the modal was silently discarded on every "Nuevo X"/"Editar" click. These
+     * tests open each modal and assert a control inside it is a genuine descendant of the
+     * single [wire:id] element, not merely present on the page.
+     */
+    public function test_admin_users_modal_form_is_inside_the_livewire_component_root(): void
+    {
+        $this->actingAs($this->admin());
+
+        $html = Livewire::test(\App\Livewire\Admin\Users\Index::class)
+            ->call('create')
+            ->html();
+
+        $this->assertNestedInComponent($html, 'wire:submit', 'save', 'Usuarios modal form');
+    }
+
+    public function test_checklist_templates_modal_form_is_inside_the_livewire_component_root(): void
+    {
+        $this->actingAs($this->admin());
+
+        $html = Livewire::test(Index::class)
+            ->call('create')
+            ->html();
+
+        $this->assertNestedInComponent($html, 'wire:submit', 'save', 'Checklists modal form');
+    }
+
+    public function test_maintenance_plans_modal_form_is_inside_the_livewire_component_root(): void
+    {
+        $this->actingAs($this->admin());
+
+        $html = Livewire::test(\App\Livewire\MaintenancePlans\Index::class)
+            ->call('create')
+            ->html();
+
+        $this->assertNestedInComponent($html, 'wire:submit', 'save', 'Planes modal form');
+    }
+
+    public function test_spare_parts_modal_form_is_inside_the_livewire_component_root(): void
+    {
+        $this->actingAs($this->admin());
+
+        $html = Livewire::test(\App\Livewire\SpareParts\Index::class)
+            ->call('create')
+            ->html();
+
+        $this->assertNestedInComponent($html, 'wire:submit', 'save', 'Inventario modal form');
+    }
+
+    public function test_assets_index_modal_form_is_inside_the_livewire_component_root(): void
+    {
+        $this->actingAs($this->admin());
+
+        $html = Livewire::test(\App\Livewire\Assets\Index::class)
+            ->call('create')
+            ->html();
+
+        $this->assertNestedInComponent($html, 'wire:submit', 'save', 'Activos modal form');
+    }
+
+    public function test_admin_plants_plant_modal_form_is_inside_the_livewire_component_root(): void
+    {
+        $this->actingAs($this->admin());
+
+        $html = Livewire::test(\App\Livewire\Admin\Plants\Index::class)
+            ->call('createPlant')
+            ->html();
+
+        $this->assertNestedInComponent($html, 'wire:submit', 'savePlant', 'Plantas plant modal form');
+    }
+
+    public function test_admin_plants_area_modal_form_is_inside_the_livewire_component_root(): void
+    {
+        $this->actingAs($this->admin());
+
+        $html = Livewire::test(\App\Livewire\Admin\Plants\Index::class)
+            ->call('createArea')
+            ->html();
+
+        $this->assertNestedInComponent($html, 'wire:submit', 'saveArea', 'Plantas area modal form');
     }
 }
