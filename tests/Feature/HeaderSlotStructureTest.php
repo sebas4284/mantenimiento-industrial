@@ -8,6 +8,7 @@ use App\Models\Area;
 use App\Models\Asset;
 use App\Models\Plant;
 use App\Models\User;
+use App\Models\WorkOrder;
 use DOMDocument;
 use DOMXPath;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -236,5 +237,25 @@ class HeaderSlotStructureTest extends TestCase
             ->html();
 
         $this->assertNestedInComponent($html, 'wire:submit', 'saveArea', 'Plantas area modal form');
+    }
+
+    public function test_work_order_show_assignment_select_is_inside_the_livewire_component_root(): void
+    {
+        $workOrder = WorkOrder::factory()->create();
+
+        $response = $this->actingAs($this->admin())->get("/ordenes/{$workOrder->id}");
+        $response->assertOk();
+
+        $this->assertNestedInComponent($response->getContent(), 'wire:submit', 'assign', 'WorkOrders Show assignment form');
+    }
+
+    public function test_quick_report_form_is_inside_the_livewire_component_root(): void
+    {
+        $asset = Asset::factory()->for(Area::factory()->for(Plant::factory()))->create();
+
+        $response = $this->actingAs($this->admin())->get("/reportar/{$asset->code}");
+        $response->assertOk();
+
+        $this->assertNestedInComponent($response->getContent(), 'wire:submit', 'report', 'QuickReport form');
     }
 }
